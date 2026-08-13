@@ -89,9 +89,33 @@ function _borrarFilasVacias(sh, desdeFila) {
   if (!runs.length) return 0
   var borradas = 0
   for (var i = runs.length - 1; i >= 0; i--) {
-    try { sh.deleteRows(runs[i][0], runs[i][1]); borradas += runs[i][1] } catch (eD) {}
+    try {
+      sh.deleteRows(runs[i][0], runs[i][1])
+      borradas += runs[i][1]
+    } catch (eD) {
+      // Si el borrado falla (p. ej. filas dentro de un rango combinado),
+      // se quita la combinación y se reintenta; si aun así no se puede,
+      // se ignora la fila (nunca se tocan datos).
+      try {
+        sh.getRange(runs[i][0], 1, runs[i][1], 1).breakApart()
+        sh.deleteRows(runs[i][0], runs[i][1])
+        borradas += runs[i][1]
+      } catch (eD2) {}
+    }
   }
   return borradas
+}
+
+// Barrido con reintentos: algunas filas "vacías" resisten el borrado la
+// primera vez (rangos combinados, etc.). Repite hasta que no quede ninguna.
+function _limpiarFilasVaciasLoop(sh, desdeFila) {
+  var total = 0
+  for (var ronda = 0; ronda < 3; ronda++) {
+    var n = _borrarFilasVacias(sh, desdeFila)
+    total += n
+    if (n === 0) break
+  }
+  return total
 }
 
 function _normalizarSexo(v) {
