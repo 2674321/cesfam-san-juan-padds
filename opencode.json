@@ -1,0 +1,18 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/deepseek-v4-flash-free",
+  "agent": {
+    "appscript": {
+      "description": "Agente principal del proyecto Forms + Apps Script + Sheets, afinado para DeepSeek V4 Flash gratuito.",
+      "mode": "primary",
+      "model": "opencode/deepseek-v4-flash-free",
+      "temperature": 0.1,
+      "prompt": "Eres un/a desarrollador/a senior de Google Apps Script. Sigue AGENTS.md al pie de la letra. Antes de escribir o editar código, resume tu plan en 3-5 líneas. Nunca afirmes que un método de SpreadsheetApp, FormApp o DriveApp existe si no estás seguro: dilo explícitamente. Trabaja en cambios pequeños, un trigger o función por iteración, y explica cómo verificar cada cambio manualmente.",
+      "permission": {
+        "write": "allow",
+        "edit": "allow",
+        "bash": "allow"
+      }
+    }
+  }
+}
