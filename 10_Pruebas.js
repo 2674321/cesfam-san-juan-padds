@@ -26,8 +26,8 @@ function ejecutarPruebas() {
   var pac = ss.getSheetByName(HOJA_PAC)
   if (pac) {
     var lcPac = pac.getLastColumn()
-    chk('Pacientes: ' + lcPac + ' columnas (esperadas ' + (_COLUMNAS._count || 111) + ')',
-      lcPac >= (_COLUMNAS._count || 111))
+    chk('Pacientes: ' + lcPac + ' columnas (esperadas ' + (_COLUMNAS._count || 112) + ')',
+      lcPac >= (_COLUMNAS._count || 112))
     if (lcPac >= 3) {
       var heads = pac.getRange(3, 1, 1, lcPac).getValues()[0]
       var clavesCab = ['NOMBRE', 'RUN', 'ESTADO', 'SECTOR', 'OBSERVACIONES', 'PRIORIDAD']
@@ -41,31 +41,75 @@ function ejecutarPruebas() {
       }
       chk('Pacientes: encabezados clave presentes', faltanCab.length === 0,
         faltanCab.length ? 'Faltan: ' + faltanCab.join(', ') : '')
+      chk('Pacientes: columna INSULINO DEPENDIENTE presente',
+        lcPac >= 56 && String(heads[55] || '').toUpperCase().indexOf('INSULINO') >= 0)
     }
     chk('Pacientes: con datos (fila 4+)', pac.getLastRow() >= 4)
   }
 
   // ── 2. CONSTANTES Y MAPAS ──────────────────────────────
-  chk('Guía de columnas: 111 registradas', (_COLUMNAS._count || 0) === 111)
+  chk('Guía de columnas: 112 registradas', (_COLUMNAS._count || 0) === 112)
   var claves = ['ID', 'SECTOR', 'NOMBRE', 'RUN', 'VITAL', 'PRIORIDAD', 'OBSERVACIONES', 'EDITOR']
   for (var c = 0; c < claves.length; c++) {
     chk('COL.' + claves[c] + ' definida', COL[claves[c]] !== undefined)
   }
   chk('Controles: _FECHA_BY_COL cubre todos', Object.keys(_FECHA_BY_COL).length >= _CONTROL_FECHAS.length)
 
+  var okVac = true, detVac = ''
+  for (var vc = 0; vc < _VACUNA_COLS.length; vc++) {
+    if (PAC_VALIDACIONES[_VACUNA_COLS[vc]] !== _VACUNA_VALS) { okVac = false; detVac += _VACUNA_COLS[vc] + ' ' }
+  }
+  chk('Inmunización 81-84: dropdown SI·NO·N/A·R·P', okVac, detVac)
+
+  var okLibre = true, detLibre = ''
+  for (var li = 0; li < PAC_LIBRES.length; li++) {
+    var lib = PAC_LIBRES[li]
+    if (PAC_VALIDACIONES[lib] || _FECHAS_VA.indexOf(lib) >= 0 || _CHECKBOX_COLS.indexOf(lib) >= 0) {
+      okLibre = false; detLibre += lib + ' '
+    }
+  }
+  chk('PAC_LIBRES: sin columnas de dropdown/fecha/casilla', okLibre, detLibre)
+
+  var okSis = true, detSis = ''
+  if (HOJAS_SISTEMA.indexOf(HOJA) >= 0) { okSis = false; detSis += HOJA + ' no debe estar listada ' }
+  if (HOJAS_SISTEMA.indexOf(HOJA_PAC) < 0) { okSis = false; detSis += HOJA_PAC + ' debe estar listada ' }
+  if (HOJAS_SISTEMA.indexOf(HOJA_FORM) < 0) { okSis = false; detSis += HOJA_FORM + ' debe estar listada ' }
+  chk('HOJAS_SISTEMA: excluye Agenda, incluye hojas de sistema', okSis, detSis)
+
   var okServ = true, detServ = ''
   for (var sk in _SERVICIO_COL_MAP) {
     var pc = _SERVICIO_COL_MAP[sk]
-    if (!(pc >= 1 && pc <= 111)) { okServ = false; detServ += sk + '→' + pc + ' ' }
+    if (!(pc >= 1 && pc <= 112)) { okServ = false; detServ += sk + '→' + pc + ' ' }
   }
   chk('Servicios del formulario → columna válida', okServ, detServ)
 
   var okPac = true, detPac = ''
   for (var fi = 0; fi < FORM_A_PAC.length; fi++) {
     var fp = FORM_A_PAC[fi]
-    if (!(fp[1] == null || (fp[1] >= 1 && fp[1] <= 111))) { okPac = false; detPac += fi + ' ' }
+    if (!(fp[1] == null || (fp[1] >= 1 && fp[1] <= 112))) { okPac = false; detPac += fi + ' ' }
   }
   chk('Mapa formulario→Pacientes válido', okPac, detPac)
+
+  var okFfm = true, detFfm = ''
+  for (var fmk in _FORM_FIELD_MAP) {
+    var fmc = _FORM_FIELD_MAP[fmk]
+    if (!(fmc >= 1 && fmc <= 19)) { okFfm = false; detFfm += fmk + '→' + fmc + ' ' }
+  }
+  chk('Mapa formulario→columnas de recepción (1-19) válido', okFfm, detFfm)
+
+  var okOp = true, detOp = ''
+  var colsOp = Object.keys(PAC_VALIDACIONES)
+  for (var oi = 0; oi < colsOp.length; oi++) {
+    var listaOp = PAC_VALIDACIONES[colsOp[oi]]
+    for (var oj = 0; oj < listaOp.length; oj++) {
+      if (!_bgOpcionCol(Number(colsOp[oi]), _claveColorOpcion(listaOp[oj]))) {
+        okOp = false; detOp += colsOp[oi] + ':' + listaOp[oj] + ' '
+      }
+    }
+  }
+  chk('Dropdown: todas las opciones tienen color', okOp, detOp)
+chk('Sector: "PENDIENTE" distinto de "AMARILLO" (gris azulado)', _SECTOR_COLORS['PENDIENTE'] !== undefined && _SECTOR_COLORS['PENDIENTE'][0] === '#F1F5F9' && _SECTOR_COLORS['PENDIENTE'][1] !== _SECTOR_COLORS['AMARILLO'][1])
+  chk('Sector: chip "PENDIENTE" por columna (col 2 → #64748B)', _bgOpcionCol(2, 'PENDIENTE') === '#64748B' && _bgOpcionCol(6, 'PENDIENTE') === '#B45309')
 
   // ── 3. LÓGICA PURA (no toca la hoja) ───────────────────
   chk('RUT sin guión → con guión', formatearRUT('16297925') === '1629792-5')
@@ -88,11 +132,20 @@ function ejecutarPruebas() {
   chk('colToLetter(1) → A', colToLetter(1) === 'A')
   chk('colToLetter(27) → AA', colToLetter(27) === 'AA')
   chk('colToLetter(111) → DG', colToLetter(111) === 'DG')
+  chk('colToLetter(112) → DH', colToLetter(112) === 'DH')
   chk('Teléfono móvil: 9 8765 4321', fmtNum('987654321') === '9 8765 4321')
   chk('Teléfono fijo: 2234 5678', fmtNum('22345678') === '2234 5678')
   chk('_estadoFecha: N/A', _estadoFecha('N/A', 6, 30) === 'N/A')
+  chk('_estadoFecha: n/a minúscula → N/A', _estadoFecha('n/a', 6, 30) === 'N/A')
   chk('_estadoFecha: vacío → PENDIENTE', _estadoFecha('', 6, 30) === 'PENDIENTE')
   chk('_estadoFecha: texto → PENDIENTE', _estadoFecha('sin fecha', 6, 30) === 'PENDIENTE')
+  chk('RUT sin DV (7 dígitos) no se corrompe', formatearRUT('1629792') === '1629792')
+  chk('_normRUN: 7 dígitos sin guion se deja tal cual', _normRUN('1629792') === '1629792')
+  chk('_fechaCorrupta: fecha válida → false', _fechaCorrupta('15/06/2026', false) === false)
+  chk('_fechaCorrupta: 40/13/2026 → mal', _fechaCorrupta('40/13/2026', false) === 'mal')
+  chk('_fechaCorrupta: 31/12/1969 → epoch', _fechaCorrupta('31/12/1969', false) === 'epoch')
+  chk('_fechaCorrupta: año 2500 → futuro', _fechaCorrupta('01/01/2500', false) === 'futuro')
+  chk('_fechaCorrupta: texto plano → false', _fechaCorrupta('PENDIENTE', false) === false)
 
   var hNow = new Date()
   var fPas = new Date(hNow.getFullYear() - 1, hNow.getMonth(), hNow.getDate())
@@ -132,26 +185,26 @@ function ejecutarPruebas() {
   }
   var rows = ''
   for (var r2 = 0; r2 < res.length; r2++) {
-    rows += '<tr><td style="color:' + (res[r2].ok ? '#2e7d32' : '#c62828') + '">' +
+    rows += '<tr><td style="color:' + (res[r2].ok ? '#15803D' : '#B91C1C') + '">' +
       (res[r2].ok ? '&#10003;' : '&#10007;') + '</td><td>' + _esc(res[r2].n) + '</td>' +
-      (res[r2].ok ? '<td></td>' : '<td style="color:#c62828">' + _esc(res[r2].d) + '</td>') + '</tr>'
+      (res[r2].ok ? '<td></td>' : '<td style="color:#B91C1C">' + _esc(res[r2].d) + '</td>') + '</tr>'
   }
   var html = '<html><head><base target="_top"><style>' +
-    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:14px;background:#f3f4f8;color:#202124;font-size:12.5px}' +
-    'h2{margin:0 0 2px;font-size:17px;color:#1a237e}' +
-    '.sub{font-size:11px;color:#5f6368;margin-bottom:10px}' +
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:14px;background:#F1F5F9;color:#202124;font-size:12.5px}' +
+    'h2{margin:0 0 2px;font-size:17px;color:#1E293B}' +
+    '.sub{font-size:11px;color:#64748B;margin-bottom:10px}' +
     '.sum{display:flex;gap:8px;margin-bottom:10px}' +
     '.chip{flex:1;border-radius:10px;padding:8px;text-align:center;font-weight:700;color:#fff;font-size:13px}' +
     'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden}' +
-    'td{padding:4px 8px;border-bottom:1px solid #f0f0f0}' +
+    'td{padding:4px 8px;border-bottom:1px solid #F1F5F9}' +
     'td:first-child{width:24px;text-align:center}' +
     '</style></head><body>' +
     '<h2>Diagnóstico del sistema</h2>' +
     '<div class="sub">' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm') + ' · solo revisión, no modifica nada</div>' +
     '<div class="sum">' +
-    '<div class="chip" style="background:' + (okN === res.length ? '#2e7d32' : '#e65100') + '">' + okN + ' OK</div>' +
-    '<div class="chip" style="background:' + (failN ? '#c62828' : '#7b7b7b') + '">' + failN + ' pendientes</div>' +
-    '<div class="chip" style="background:#1a237e">' + res.length + ' total</div></div>' +
+    '<div class="chip" style="background:' + (okN === res.length ? '#15803D' : '#C2410C') + '">' + okN + ' OK</div>' +
+    '<div class="chip" style="background:' + (failN ? '#B91C1C' : '#64748B') + '">' + failN + ' pendientes</div>' +
+    '<div class="chip" style="background:#1E293B">' + res.length + ' total</div></div>' +
     '<table>' + rows + '</table>' +
     '</body></html>'
   ui.showSidebar(HtmlService.createHtmlOutput(html).setTitle('Diagnóstico PADDS').setWidth(400))

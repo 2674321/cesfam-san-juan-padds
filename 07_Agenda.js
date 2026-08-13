@@ -4,6 +4,45 @@
 // ─────────────────────────────────────────────────────────
 // ─── AGENDA: GENERACIÓN + UTILIDADES ─────────────────────────────────────────
 
+// Hoja donde se aplica la agenda: la hoja ACTIVA si no es una hoja de sistema
+// (Pacientes, Dashboard, etc.); si lo es, cae a 'Agenda Profesionales'.
+function _hojaAgenda() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  var act = ss.getActiveSheet()
+  if (act) {
+    var lista = typeof HOJAS_SISTEMA !== 'undefined' ? HOJAS_SISTEMA : []
+    for (var i = 0; i < lista.length; i++) {
+      if (lista[i] === act.getName()) return ss.getSheetByName(HOJA) || null
+    }
+    return act
+  }
+  return ss.getSheetByName(HOJA) || null
+}
+
+// true si la hoja es de agenda (la oficial o una hoja de trabajo que ya tiene
+// semanas con el formato). Se usa en onEdit para no interferir con otras hojas.
+function _esHojaAgenda(sh) {
+  if (!sh) return false
+  var nombre = sh.getName()
+  if (nombre === HOJA) return true
+  var lista = typeof HOJAS_SISTEMA !== 'undefined' ? HOJAS_SISTEMA : []
+  for (var i = 0; i < lista.length; i++) {
+    if (lista[i] === nombre) return false
+  }
+  try {
+    var cache = CacheService.getScriptCache()
+    var key = '_ag_' + nombre
+    var v = cache.get(key)
+    if (v !== null) return v === '1'
+    var hasta = Math.min(sh.getLastRow(), 300)
+    if (hasta < 1) return false
+    var texto = sh.getRange(1, 1, hasta, 1).getValues().join(' ')
+    var es = /Semana \d{2}\/\d{2}\/\d{4}/.test(texto)
+    cache.put(key, es ? '1' : '0', 600)
+    return es
+  } catch (e) { return false }
+}
+
 // ─── GENERAR SEMANA ──────────────────────────────────────────────────────────
 
 function generarSemana() {
@@ -14,7 +53,7 @@ function generarSemana() {
 
 function generarTresSemanas() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sh = ss.getSheetByName(HOJA)
+  var sh = _hojaAgenda()
   if (!sh) { ss.toast('No existe la hoja Agenda. Créala con 🔧 Herramientas → 📑 Ordenar y colorear Hojas.', 'Agenda', 5); return }
 
   var h = new Date()
@@ -42,7 +81,7 @@ function generarTresSemanas() {
     limpiarBloque(sh, freeRow, GI[i])
     ponerSemana(sh, f, freeRow, GI[i])
   }
-  ss.toast('3 semanas creadas en Agenda', 'PADDS', 4)
+  ss.toast('3 semanas creadas en ' + sh.getName(), 'PADDS', 4)
 }
 
 function generarSemanaEspecifica() {
@@ -59,11 +98,11 @@ function generarSemanaEspecifica() {
 
 function crearSemana(lunes) {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sh = ss.getSheetByName(HOJA)
+  var sh = _hojaAgenda()
   if (!sh) { ss.toast('No existe la hoja Agenda. Créala con 🔧 Herramientas → 📑 Ordenar y colorear Hojas.', 'Agenda', 5); return }
   var pos = siguienteBloque(sh)
   ponerSemana(sh, lunes, pos.row, pos.col)
-  ss.toast('Semana del ' + fmtFecha(lunes) + ' creada', 'PADDS', 3)
+  ss.toast('Semana del ' + fmtFecha(lunes) + ' creada en ' + sh.getName(), 'PADDS', 3)
 }
 
 function siguienteBloque(sh) {
@@ -107,11 +146,11 @@ function _getWeekTemplate() {
   var fixLunes = new Date(2026, 0, 5)
   var fe2 = new Date(fixLunes.getFullYear(), fixLunes.getMonth(), fixLunes.getDate() + 4)
   vals[0][0] = 'Semana ' + fmtFecha(fixLunes) + ' — ' + fmtFecha(fe2)
-  for (var c = 0; c < 5; c++) bgs[0][c] = '#1a3c5e'
-  vals[0][5] = '✕'; bgs[0][5] = '#e53935'
-  vals[0][6] = '📦'; bgs[0][6] = '#f39c12'
+  for (var c = 0; c < 5; c++) bgs[0][c] = S.header.bg
+  vals[0][5] = '✕'; bgs[0][5] = '#B91C1C'
+  vals[0][6] = '📦'; bgs[0][6] = '#B45309'
 
-  var _dCols = ['#e3f2fd','#e8f5e9','#fff8e1','#fce4ec','#f3e5f5']
+  var _dCols = ['#E0F2FE','#DCFCE7','#FEF3C7','#FCE7F3','#F3E8FF']
   var rowPos = 1
 
   for (var d = 0; d < 5; d++) {
@@ -135,7 +174,7 @@ function _getWeekTemplate() {
         vals[r][0] = slot[0]; vals[r][1] = slot[1]
         var st = S.slots[slot[1]] || { bg: '#fff', fg: '#333' }
         bgs[r][1] = st.bg
-        var alt = i % 2 === 0 ? '#f8f9fb' : '#ffffff'
+        var alt = i % 2 === 0 ? '#F8FAFC' : '#ffffff'
         for (var c = 2; c < 6; c++) bgs[r][c] = alt
       }
     }
@@ -156,11 +195,11 @@ function _getWeekTemplate() {
     .setBorder(true, true, true, true, true, false)
   tpl.setRowHeight(1, 28)
 
-  tpl.getRange(1, 6).setFontSize(14).setFontWeight('bold').setBackground('#e53935')
+  tpl.getRange(1, 6).setFontSize(14).setFontWeight('bold').setBackground('#B91C1C')
     .setFontColor('#fff').setHorizontalAlignment('center').setVerticalAlignment('middle')
     .setBorder(true, true, true, true, true, true)
     .setNote('Eliminar: selecciona la celda y presiona Delete')
-  tpl.getRange(1, 7).setFontSize(14).setBackground('#f39c12').setFontColor('#fff')
+  tpl.getRange(1, 7).setFontSize(14).setBackground('#B45309').setFontColor('#fff')
     .setHorizontalAlignment('center').setVerticalAlignment('middle')
     .setBorder(true, true, true, true, true, true)
     .setNote('Limpiar: selecciona la celda y presiona Delete')
@@ -175,7 +214,7 @@ function _getWeekTemplate() {
 
     tpl.getRange(b, 1, 1, 6).merge()
     tpl.getRange(b, 1, 1, 6).setFontSize(12).setFontWeight('bold')
-      .setFontColor('#1a3c5e').setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setFontColor(S.header.bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, false, false).setWrap(true)
     tpl.setRowHeight(b, 30)
 
@@ -207,7 +246,7 @@ function _getWeekTemplate() {
 
     tpl.setRowHeight(b + 2 + slots.length, 6)
     tpl.getRange(b + 2 + slots.length, 1, 1, 6)
-      .setBorder(false, false, true, false, false, false).setBackground('#e0e0e0')
+      .setBorder(false, false, true, false, false, false).setBackground('#E2E8F0')
 
     rowPos += 3 + slots.length
   }
@@ -262,6 +301,26 @@ function ponerSemana(sh, lunes, row, col) {
   var dstRange = sh.getRange(row, col, RS, C)
   srcRange.copyTo(dstRange)
 
+  // El bloque copiado no debe arrastrar ningún dropdown fuera de la columna de
+  // ATENCIÓN: se limpian TODAS las validaciones del bloque y se reaplica solo
+  // el dropdown de tipo de atención en las filas de horario (nunca en fechas,
+  // encabezados, colación ni espacios).
+  var valTipos = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['VDI', 'abreviadas', 'REGISTRO'], true).setAllowInvalid(true).build()
+  dstRange.clearDataValidations()
+  var rp = 1
+  for (var d = 0; d < 5; d++) {
+    var slots = SLOTS[d] || SLOTS_DEFAULT
+    rp += 2
+    for (var i = 0; i < slots.length; i++) {
+      if (slots[i][1] !== 'COLACION') {
+        sh.getRange(row + rp - 1, col + 1).setDataValidation(valTipos)
+      }
+      rp++
+    }
+    rp++
+  }
+
   var fe = new Date(lunes)
   var fe2 = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 4)
   var semTxt = 'Semana ' + fmtFecha(fe) + ' — ' + fmtFecha(fe2)
@@ -287,7 +346,7 @@ function ponerSemana(sh, lunes, row, col) {
 
 function eliminarSemana() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sh = ss.getSheetByName(HOJA)
+  var sh = _hojaAgenda()
   if (!sh) return
   var a = sh.getActiveRange()
   if (!a) return
@@ -315,7 +374,7 @@ function eliminarSemana() {
 
 function limpiarSemanasPasadas() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sh = ss.getSheetByName(HOJA)
+  var sh = _hojaAgenda()
   if (!sh) return
   var maxCol = GI[2] + 1
   var lr = sh.getLastRow()
@@ -379,8 +438,8 @@ function irAFecha() {
 
 function navegarA(s) {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sh = ss.getSheetByName(HOJA)
-  if (!sh) { SpreadsheetApp.getUi().alert('Primero debes crear una semana en la Agenda.'); return }
+  var sh = _hojaAgenda()
+  if (!sh) { SpreadsheetApp.getUi().alert('Primero debes crear una semana en la hoja de agenda.'); return }
   var maxCol = GI[2] + 1
   var d = sh.getRange(1, 1, sh.getLastRow(), maxCol).getValues()
   for (var r = 0; r < d.length; r++) {
@@ -411,7 +470,7 @@ function buscarPaciente() {
   if (r.getSelectedButton() !== ui.Button.OK) return
   var q = r.getResponseText().trim().toLowerCase()
   if (!q) return
-  var sh = ss.getSheetByName(HOJA)
+  var sh = _hojaAgenda()
   if (!sh) return
   var maxCol = GI[2] + PC + 1
   var d = sh.getRange(1, 1, sh.getLastRow(), maxCol).getValues()
@@ -451,7 +510,7 @@ function buscarPaciente() {
 function resumen() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   ss.toast('Generando resumen…', 'PADDS', 1)
-  var sh = ss.getSheetByName(HOJA)
+  var sh = _hojaAgenda()
   if (!sh) return
   var maxCol = GI[2] + PC
   var lr = sh.getLastRow()
@@ -496,4 +555,3 @@ function resumen() {
 '\n📝 Ocupados: ' + lle +
 '\n📈 Ocupación: ' + oc + '%')
 }
-

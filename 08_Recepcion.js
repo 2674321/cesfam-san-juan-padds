@@ -4,39 +4,47 @@
 
 // ─────────────────────────────────────────────────────────
 
-function _oscurecer(hex, amount) {
-  return _ajustarHex(hex, -amount, -amount, -amount)
+// Normaliza un RUN para comparación: quita puntos/espacios; si tiene guion lo
+// re-formatea (12345678-5); si son solo dígitos (falta DV) se deja tal cual
+// (formatearRUT lo convertiría en un DV incorrecto).
+function _normRUN(v) {
+  var s = String(v || '').replace(/\./g, '').replace(/\s/g, '').toUpperCase()
+  if (!s) return ''
+  if (s.indexOf('-') >= 0) return formatearRUT(s)
+  if (/^\d{7,8}$/.test(s)) return s
+  return formatearRUT(s)
 }
 
 var _ESTADO_CSS = {
-  'Pendiente': { badge: '#E65100', tint: '#FFF3E0', fg: '#FFFFFF' },
-  'Aprobado':  { badge: '#2E7D32', tint: '#E8F5E9', fg: '#FFFFFF' },
-  'Rechazado': { badge: '#C62828', tint: '#FFEBEE', fg: '#FFFFFF' },
+  'Pendiente': { badge: '#C2410C', tint: '#FFEDD5', fg: '#FFFFFF' },
+  'Gestionado': { badge: '#15803D', tint: '#DCFCE7', fg: '#FFFFFF' },
+  'Rechazado': { badge: '#B91C1C', tint: '#FEE2E2', fg: '#FFFFFF' },
 }
 
 var _FORM_SEC_TINTS = {
-  1:'#F5F5F5', 2:'#FFF8F0', 3:'#F5F5F5', 4:'#FFF8F0', 5:'#F5F5F5',
-  6:'#E8EAF6', 7:'#F0F4FF', 8:'#E8EAF6', 9:'#F0F4FF',
-  10:'#E8F5E9',11:'#F0F9F6',12:'#E8F5E9',13:'#F0F9F6',14:'#E8F5E9',15:'#F0F9F6',16:'#E8F5E9',
-  17:'#F3E5F5',
+  1:'#F1F5F9', 2:'#E2E8F0', 3:'#F1F5F9', 4:'#E2E8F0', 5:'#F1F5F9',
+  6:'#E0F2FE', 7:'#F0FDFA', 8:'#E0F2FE', 9:'#F0FDFA',
+  10:'#DCFCE7',11:'#F0FDFA',12:'#DCFCE7',13:'#F0FDFA',14:'#DCFCE7',15:'#F0FDFA',16:'#DCFCE7',
+  17:'#F3E8FF', 18:'#F3E8FF', 19:'#F5F3FF',
 }
 
 var _ALIGN = {
   1: 'center', 2: 'center', 3: 'center', 4: 'left', 5: 'center',
   6: 'center', 7: 'center', 8: 'left', 9: 'left', 10: 'left', 11: 'left',
   12: 'left', 13: 'center', 14: 'left', 15: 'left', 16: 'center', 17: 'left',
+  18: 'center', 19: 'center',
 }
 
 function _estiloFila(sh, row, lc) {
   var even = row % 2 === 0
   var rng = sh.getRange(row, 1, 1, lc)
   rng
-    .setFontFamily('Calibri').setFontSize(10).setFontColor('#212121')
+    .setFontFamily(_UI.font).setFontSize(10).setFontColor('#212121')
     .setVerticalAlignment('middle')
-    .setBorder(true, true, true, true, true, true, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID)
+    .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
   var bgs = []
   for (var c = 1; c <= lc; c++)
-    bgs.push(even ? _oscurecer(_FORM_SEC_TINTS[c] || '#ffffff', 8) : (_FORM_SEC_TINTS[c] || '#ffffff'))
+    bgs.push(even ? _ajustarHex(_FORM_SEC_TINTS[c] || '#ffffff', -8, -8, -8) : (_FORM_SEC_TINTS[c] || '#ffffff'))
   rng.setBackgrounds([bgs])
   for (var c = 1; c <= lc; c++)
     sh.getRange(row, c).setHorizontalAlignment(_ALIGN[c] || 'center')
@@ -55,21 +63,75 @@ function _colorEstado(sh, row, estado, lc) {
 }
 
 function _miniResumenForm(sh) {
-  var lc = sh.getLastColumn() || 17
+  var lc = sh.getLastColumn() || 19
   var SEP = getFormulaSep()
+  var BS_MED = SpreadsheetApp.BorderStyle.SOLID_MEDIUM
 
-  var f2 = '="⏳ Pendientes: "&COUNTIF($C$5:$C' + SEP + '"Pendiente")' +
-    '&"   ✅ Aprobados: "&COUNTIF($C$5:$C' + SEP + '"Aprobado")' +
-    '&"   ❌ Rechazados: "&COUNTIF($C$5:$C' + SEP + '"Rechazado")' +
-    '&"   📥 Total formularios: "&COUNTA($C$5:$C)'
-  try { sh.getRange(2, 1, 1, lc).breakApart() } catch(eB2) {}
-  sh.getRange(2, 1, 1, lc).merge()
-  sh.getRange(2, 1).setFormula(f2)
-    .setFontFamily('Calibri').setFontSize(11).setFontWeight('bold')
-    .setFontColor('#0D47A1').setBackground('#E3F2FD')
+  try { sh.getRange(1, 1, 3, Math.max(lc, 20)).breakApart() } catch (eB) {}
+
+  var t
+  try { t = sh.getRange(1, 1, 1, lc).merge() } catch (eM) { t = sh.getRange(1, 1) }
+  t.setBackground(_UI.hdrBg)
     .setHorizontalAlignment('center').setVerticalAlignment('middle')
-    .setBorder(true, true, true, true, true, true, '#1565C0', SpreadsheetApp.BorderStyle.SOLID)
-  sh.setRowHeight(2, 28)
+    .setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
+  var txtTit = 'REGISTRO DE SOLICITUDES\nPrograma PADDS · Recepción y gestión de formularios profesionales'
+  var nlTit = txtTit.indexOf('\n')
+  var okRT = false
+  try {
+    var rtTit = SpreadsheetApp.newRichTextValue().setText(txtTit)
+      .setTextStyle(0, nlTit, SpreadsheetApp.newTextStyle().setForegroundColor('#FFFFFF')
+        .setFontSize(17).setBold(true).setFontFamily(_UI.font).build())
+      .setTextStyle(nlTit + 1, txtTit.length, SpreadsheetApp.newTextStyle().setForegroundColor(_UI.hdrSub)
+        .setFontSize(10).setFontFamily(_UI.font).build())
+      .build()
+    t.setRichTextValue(rtTit)
+    okRT = true
+  } catch (eRT) {}
+  if (!okRT) {
+    t.setValue('REGISTRO DE SOLICITUDES')
+      .setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(15).setFontFamily(_UI.font)
+  }
+  t.setBorder(true, true, true, true, false, false, '#1E293B', BS_MED)
+  t.setNote('Los formularios llegan automáticamente. Revise los datos, corrija si es necesario, ' +
+    'luego use el menú Formulario: "Aprobar" (copia a Pacientes y elimina la fila) o "Rechazar".')
+  sh.setRowHeight(1, 44)
+
+  var cards = [
+    { label: 'TOTAL SOLICITUDES', col1: 1,  col2: 5,  color: '#0F766E', tint: '#EEF2F7',
+      f: 'COUNTA(G5:G)' },
+    { label: 'PENDIENTES',        col1: 6,  col2: 10, color: '#C2410C', tint: '#FFEDD5',
+      f: 'COUNTIF(C5:C' + SEP + '"Pendiente")' },
+    { label: 'GESTIONADOS',        col1: 11, col2: 15, color: '#15803D', tint: '#DCFCE7',
+      f: 'COUNTIF(C5:C' + SEP + '"Gestionado")' },
+    { label: 'RECHAZADOS',        col1: 16, col2: 19, color: '#B91C1C', tint: '#FEE2E2',
+      f: 'COUNTIF(C5:C' + SEP + '"Rechazado")' },
+  ]
+  for (var i = 0; i < cards.length; i++) {
+    var ca = cards[i]
+    if (ca.col1 > lc) continue
+    var nCols = Math.min(ca.col2, lc) - ca.col1 + 1
+    var rLab = sh.getRange(2, ca.col1, 1, nCols).merge()
+    var labTxt = '● ' + ca.label
+    var rtLab = SpreadsheetApp.newRichTextValue().setText(labTxt)
+      .setTextStyle(0, 1, SpreadsheetApp.newTextStyle().setForegroundColor(ca.color).setBold(true)
+        .setFontSize(8).setFontFamily(_UI.font).build())
+      .setTextStyle(2, labTxt.length, SpreadsheetApp.newTextStyle().setForegroundColor('#64748B').setBold(true)
+        .setFontSize(8).setFontFamily(_UI.font).build())
+      .build()
+    rLab.setRichTextValue(rtLab)
+    rLab.setBackground(ca.tint).setHorizontalAlignment('center').setVerticalAlignment('middle')
+    var rNum = sh.getRange(3, ca.col1, 1, nCols).merge()
+    var aNum = sh.getRange(3, ca.col1)
+    try { aNum.setFormula(ca.f) } catch (eF) { aNum.setValue(0) }
+    aNum.setNumberFormat('0')
+      .setFontFamily(_UI.font).setFontSize(20).setFontWeight('bold')
+      .setFontColor(ca.color).setBackground('#FFFFFF')
+      .setHorizontalAlignment('center').setVerticalAlignment('middle')
+    sh.getRange(2, ca.col1, 2, nCols)
+      .setBorder(true, true, true, true, false, false, ca.color, BS_MED)
+  }
+  sh.setRowHeight(2, 20)
+  sh.setRowHeight(3, 36)
 }
 
 function _obtenerEstadisticas() {
@@ -84,7 +146,7 @@ function _obtenerEstadisticas() {
     if (!est) continue
     stats.total++
     if (est === 'Pendiente') stats.pend++
-    else if (est === 'Aprobado') stats.aprob++
+    else if (est === 'Gestionado') stats.aprob++
     else if (est === 'Rechazado') stats.rech++
   }
   return stats
@@ -95,25 +157,25 @@ function mostrarSidebarEstadisticas() {
   if (!stats) { SpreadsheetApp.getUi().alert('Primero crea la hoja de recepción (📝 Formulario → "📋 Crear hoja de recepción").'); return }
   var html = '<html><head><base target="_top"><style>' +
     'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:16px;color:#202124;font-size:14px;background:#fff}' +
-    'h2{margin:0 0 4px 0;font-size:16px;font-weight:500;color:#1a237e}' +
-    '.sub{font-size:12px;color:#5f6368;margin-bottom:16px}' +
-    '.card{border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin-bottom:12px}' +
-    '.total-num{font-size:36px;font-weight:300;color:#1a237e}' +
-    '.total-label{font-size:12px;color:#5f6368}' +
-    '.row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5}' +
+    'h2{margin:0 0 4px 0;font-size:16px;font-weight:500;color:#1E293B}' +
+    '.sub{font-size:12px;color:#64748B;margin-bottom:16px}' +
+    '.card{border:1px solid #E2E8F0;border-radius:8px;padding:12px;margin-bottom:12px}' +
+    '.total-num{font-size:36px;font-weight:300;color:#1E293B}' +
+    '.total-label{font-size:12px;color:#64748B}' +
+    '.row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F1F5F9}' +
     '.row:last-child{border-bottom:none}' +
     '.count{font-size:18px;font-weight:500}' +
     '.tag{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}' +
-    '.tag-pend{background:#E65100} .tag-aprob{background:#2E7D32} .tag-rech{background:#C62828}' +
+    '.tag-pend{background:#C2410C} .tag-aprob{background:#15803D} .tag-rech{background:#B91C1C}' +
     '.label-name{color:#3c4043;display:flex;align-items:center}' +
-    '.footer{font-size:11px;color:#9aa0a6;text-align:center;padding-top:12px;border-top:1px solid #e8eaed;margin-top:12px}' +
+    '.footer{font-size:11px;color:#94A3B8;text-align:center;padding-top:12px;border-top:1px solid #E2E8F0;margin-top:12px}' +
     '</style></head><body>' +
     '<h2>Recepción formularios PADDS</h2>' +
     '<div class="sub" id="updated">Actualizado: ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm:ss') + '</div>' +
     '<div class="card"><div class="total-num" id="totalNum">' + stats.total + '</div><div class="total-label">Formularios recibidos</div></div>' +
-    '<div class="card"><div style="font-size:12px;color:#5f6368;margin-bottom:8px">Estado</div>' +
+    '<div class="card"><div style="font-size:12px;color:#64748B;margin-bottom:8px">Estado</div>' +
     '<div class="row"><span class="label-name"><span class="tag tag-pend"></span>Pendiente</span><span class="count" id="pendCount">' + stats.pend + '</span></div>' +
-    '<div class="row"><span class="label-name"><span class="tag tag-aprob"></span>Aprobado</span><span class="count" id="aprobCount">' + stats.aprob + '</span></div>' +
+    '<div class="row"><span class="label-name"><span class="tag tag-aprob"></span>Gestionado</span><span class="count" id="aprobCount">' + stats.aprob + '</span></div>' +
     '<div class="row"><span class="label-name"><span class="tag tag-rech"></span>Rechazado</span><span class="count" id="rechCount">' + stats.rech + '</span></div></div>' +
     '<div class="footer" id="footer">Los datos se actualizan automáticamente</div>' +
     '<script>' +
@@ -163,49 +225,33 @@ function crearFormularioBase() {
   } else {
     ss.toast('Aplicando mejoras sin borrar datos…', 'PADDS', 1)
   }
-  sh.setTabColor('#9B8CA8')
+  sh.setTabColor('#64748B')
 
   sh.setFrozenColumns(0)
   sh.setFrozenRows(0)
 
-  var lc = 17
-
-  var WHITE = '#ffffff', NAVY = '#0D47A1', BLUE = '#1565C0'
-  var LIGHT_BLUE = '#E3F2FD', WARN = '#FFF8E1', BORDER = '#BBDEFB'
+  var lc = 19, WHITE = '#ffffff', NAVY = _UI.hdrBg, BLUE = _UI.accent
+  var LIGHT_BLUE = '#E0F2FE', WARN = '#FEF3C7', BORDER = _UI.accentL
+  var SEC_COLORS = ['#475569', '#0F766E', '#C2410C', '#334155']
+  var SEC_TINTS = ['#EEF1F5', '#E0F2FE', '#FFEDD5', '#E4E9EB']
   var BS = SpreadsheetApp.BorderStyle.SOLID
   var BS_MED = SpreadsheetApp.BorderStyle.SOLID_MEDIUM
 
-  sh.setRowHeight(1, 52)
-  sh.getRange(1, 1, 1, lc).merge()
-  sh.getRange(1, 1)
-    .setValue('📋  Recepcion formularios PADDS')
-    .setFontFamily('Calibri').setFontSize(20).setFontWeight('bold')
+  sh.setRowHeight(1, 44)
+  try { sh.getRange(1, 1, 4, Math.max(lc, 20)).breakApart() } catch (eB) {}
+  var tTit
+  try { tTit = sh.getRange(1, 1, 1, lc).merge() } catch (eM) { tTit = sh.getRange(1, 1) }
+  tTit
+    .setValue('REGISTRO DE SOLICITUDES · PADDS')
+    .setFontFamily(_UI.font).setFontSize(20).setFontWeight('bold')
     .setFontColor(WHITE).setBackground(NAVY)
     .setHorizontalAlignment('left').setVerticalAlignment('middle')
     .setBorder(true, true, true, true, false, false, WHITE, BS_MED)
 
-  sh.setRowHeight(2, 28)
-  sh.getRange(2, 1).setNote(
-    'Los formularios llegan automáticamente. Revise los datos, corrija si es necesario, ' +
-    'luego use el menú 📝 Formulario: "✅ Aprobar y pasar a Pacientes" (se copia a Pacientes ' +
-    'y la fila se elimina) o "❌ Rechazar solicitudes pendientes".')
-
-  sh.setRowHeight(3, 34)
-  var SEC_COLORS = ['#1A237E', '#1565C0', '#2E7D5B', '#6A1B9A']
-  for (var s = 0; s < FORM_SECCIONES.length; s++) {
-    var sec = FORM_SECCIONES[s]
-    var fin = Math.min(sec.fin, lc)
-    sh.getRange(3, sec.ini, 1, fin - sec.ini + 1).merge()
-      .setBackground(SEC_COLORS[s]).setFontColor(WHITE)
-      .setFontFamily('Calibri').setFontSize(12).setFontWeight('bold')
-      .setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, WHITE, BS_MED)
-  }
-
   var FORM_TOOLTIPS = [
     'Fecha y hora de recepción del formulario (se llena automáticamente).',
     'Tipo de formulario recibido (ej: "Registro Atención Diaria").',
-    'Estado de revisión: Pendiente → Aprobado → Rechazado. Cambie el valor usando el menú.',
+    'Estado de revisión: Pendiente → Gestionado (se envía a Pacientes) → Rechazado. Cambie el valor usando el menú.',
     'Correo del profesional que aprobó el formulario (se llena automáticamente).',
     'Fecha y hora de aprobación (se llena automáticamente).',
     'Fecha de la atención registrada. Se usa para actualizar la columna de servicio en Pacientes.',
@@ -220,6 +266,8 @@ function crearFormularioBase() {
     'Resultado del test Zarit (sobrecarga del cuidador).',
     'Fecha sugerida para el próximo control.',
     'Observaciones de la atención. Se acumulan en Pacientes en formato [fecha] con los detalles.',
+    'Paciente oncológico (SI/NO). Se copia a Pacientes (col. ONCOLÓGICO).',
+    'Estado de la postulación a estipendio. Se copia a Pacientes (col. ESTIPENDIO).',
   ]
 
   sh.setRowHeight(4, 30)
@@ -228,17 +276,19 @@ function crearFormularioBase() {
     'FECHA ATENCIÓN', 'RUT USUARIO', 'NOMBRE', 'APELLIDO', 'PROFESIONAL',
     'PRESTACIÓN', 'ESTADO NUTRICIONAL', 'VISITA PERDIDA', 'RESULTADO BARTHEL',
     'RESULTADO ZARIT', 'PRÓXIMO CONTROL', 'OBSERVACIONES',
+    'USUARIO ONCOLÓGICO', 'POSTULACIÓN ESTIPENDIO',
   ]
   for (var c = 0; c < lc; c++) {
     var secIdx = -1
     for (var si = 0; si < FORM_SECCIONES.length; si++) {
       if (c + 1 >= FORM_SECCIONES[si].ini && c + 1 <= FORM_SECCIONES[si].fin) { secIdx = si; break }
     }
-    var hdrBg = secIdx >= 0 ? _lightenHex(SEC_COLORS[secIdx], 60, 60, 60) : '#ECEFF1'
+    var hdrBg = secIdx >= 0 ? SEC_TINTS[secIdx] : '#EEF1F5'
+    var hdrFg = secIdx >= 0 ? _ajustarHex(SEC_COLORS[secIdx], -40, -40, -40) : '#1E293B'
     sh.getRange(4, c + 1)
       .setValue(HEADERS[c])
-      .setBackground(hdrBg).setFontColor(WHITE)
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold')
+      .setBackground(hdrBg).setFontColor(hdrFg)
+      .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold')
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, WHITE, BS_MED)
       .setNote([
@@ -247,7 +297,7 @@ function crearFormularioBase() {
       ].join('\n'))
   }
 
-  var NEW_ANCHOS = [150, 120, 100, 180, 140, 110, 100, 170, 150, 160, 180, 150, 90, 140, 130, 110, 280]
+  var NEW_ANCHOS = [150, 120, 100, 180, 140, 110, 100, 170, 150, 160, 180, 150, 90, 140, 130, 110, 280, 110, 150]
   for (var i = 0; i < Math.min(NEW_ANCHOS.length, lc); i++)
     sh.setColumnWidth(i + 1, NEW_ANCHOS[i])
 
@@ -257,7 +307,7 @@ function crearFormularioBase() {
   var maxRows = Math.max(300, lrForm + 5)
   var statusCol = sh.getRange(5, 3, maxRows - 4, 1)
   var rules = []
-  var estados = ['Rechazado', 'Aprobado', 'Pendiente']
+  var estados = ['Rechazado', 'Gestionado', 'Pendiente']
   for (var ei = 0; ei < estados.length; ei++) {
     var css = _ESTADO_CSS[estados[ei]]
     rules.push(SpreadsheetApp.newConditionalFormatRule()
@@ -269,20 +319,20 @@ function crearFormularioBase() {
   var dataRng = sh.getRange(5, 1, maxRows - 4, lc)
   rules.push(SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=$C5="Pendiente"')
-    .setBackground('#FFF3E0')
+    .setBackground('#FFEDD5')
     .setRanges([dataRng]).build())
   rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=$C5="Aprobado"')
-    .setBackground('#E8F5E9').setFontColor('#888888')
+    .whenFormulaSatisfied('=$C5="Gestionado"')
+    .setBackground('#DCFCE7').setFontColor('#888888')
     .setRanges([dataRng]).build())
   rules.push(SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=$C5="Rechazado"')
-    .setBackground('#FAFAFA').setFontColor('#aaaaaa').setStrikethrough(true)
+    .setBackground('#F8FAFC').setFontColor('#aaaaaa').setStrikethrough(true)
     .setRanges([dataRng]).build())
 
   rules.push(SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=AND($G5<>"",COUNTIF($G$5:$G,$G5)>1)')
-    .setBackground('#FFF8E1').setFontColor('#E65100').setBold(true)
+    .setBackground('#FEF3C7').setFontColor('#C2410C').setBold(true)
     .setRanges([sh.getRange(5, 7, maxRows - 4, 1)]).build())
   sh.setConditionalFormatRules(rules)
 
@@ -297,8 +347,17 @@ function crearFormularioBase() {
   sh.getRange(4, 7).setNote('Formato RUN: 12345678-5 (sin puntos, con guión). Se normaliza y valida automáticamente al procesar la fila.')
 
   sh.getRange(5, 13, maxRows - 4, 1).setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO', 'PADI SAN JUAN'], true)
+      .setAllowInvalid(true).setHelpText('SI = visita perdida (se registra en Observaciones). PADI SAN JUAN = registro del centro, no se marca como perdida.').build())
+
+  sh.getRange(5, 18, maxRows - 4, 1).setDataValidation(
     SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true)
-      .setAllowInvalid(true).setHelpText('SI = visita perdida (se registra en Observaciones)').build())
+      .setAllowInvalid(true).setHelpText('Paciente oncológico (SI/NO). Se copia a Pacientes.').build())
+
+  sh.getRange(5, 19, maxRows - 4, 1).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['BENEFICIARIO', 'INGRESADO', 'PENDIENTE', 'NO APLICA', 'EN ESPERA', 'N/A'], true)
+      .setAllowInvalid(true).setHelpText('Postulación a estipendio. Se copia a Pacientes.').build())
 
   sh.getRange(5, 16, maxRows - 4, 1).setDataValidation(
     SpreadsheetApp.newDataValidation().requireDate().setAllowInvalid(true).build())
@@ -317,8 +376,24 @@ function crearFormularioBase() {
       .setAllowInvalid(true).setHelpText('Elija la prestación realizada (se copia a la columna correspondiente de Pacientes)').build())
 
   sh.getRange(5, 12, maxRows - 4, 1).setDataValidation(
-    SpreadsheetApp.newDataValidation().requireValueInList(['NORMAL', 'SOBREPESO', 'OBESIDAD', 'BAJO PESO', 'N/A'], true)
+    SpreadsheetApp.newDataValidation().requireValueInList(['NORMAL', 'SOBRE PESO', 'SOBREPESO', 'OBESIDAD', 'BAJO PESO', 'N/A'], true)
       .setAllowInvalid(true).build())
+
+  sh.getRange(5, 10, maxRows - 4, 1).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['MEDICO', 'NUTRICIONISTA', 'ENFERMERIA', 'TRABAJADOR SOCIAL',
+        'KINESIOLOGIA', 'FONOAUDIOLOGIA', 'TENS', 'PODOLOGO', 'PSICOLOGA', 'OTRO'], true)
+      .setAllowInvalid(true).build())
+
+  sh.getRange(5, 14, maxRows - 4, 1).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['DEPENDENCIA LEVE', 'DEPENDENCIA MODERADA', 'DEPENDENCIA SEVERA', 'N/A'], true)
+      .setAllowInvalid(true).setHelpText('Opciones del formulario (el texto "Otros" también se acepta). Se normaliza al guardar en Pacientes.').build())
+
+  sh.getRange(5, 15, maxRows - 4, 1).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['SOBRECARGA INTENSA', 'SOBRECARGA LEVE', 'SIN SOBRECARGA', 'AUSENCIA', 'N/A', 'PENDIENTE'], true)
+      .setAllowInvalid(true).setHelpText('Resultado de la escala Zarit (se copia a Pacientes).').build())
 
   sh.setFrozenColumns(0)
   _unmergeQueCruzaFila(sh, 4)
@@ -349,9 +424,17 @@ function crearFormularioBase() {
 
   try { sh.setFrozenRows(4) } catch(eFz) {}
 
+  // Migración no destructiva: estados antiguos "Aprobado" pasan a "Gestionado"
+  var _estData = sh.getRange(5, 3, Math.max(sh.getLastRow() - 4, 0), 1).getValues()
+  var _huboCambio = false
+  for (var _ec = 0; _ec < _estData.length; _ec++) {
+    if (String(_estData[_ec][0] || '').trim() === 'Aprobado') { _estData[_ec][0] = 'Gestionado'; _huboCambio = true }
+  }
+  if (_huboCambio) sh.getRange(5, 3, _estData.length, 1).setValues(_estData)
+
   ss.toast(existe
     ? 'Hoja de recepción actualizada: formato, validaciones y resumen aplicados sin borrar ningún formulario'
-    : 'Hoja de recepción creada con 17 columnas (recepción automática activada)', 'Recepción', 4)
+    : 'Hoja de recepción creada con 19 columnas (recepción automática activada)', 'Recepción', 4)
 }
 
 function onFormSubmit(e) {
@@ -362,7 +445,7 @@ function onFormSubmit(e) {
     var stagingSh = ss.getSheetByName(HOJA_FORM)
     if (!stagingSh) return
 
-    var lc = 17
+    var lc = 19
     var newRow = []
     for (var c = 0; c < lc; c++) newRow.push('')
 
@@ -381,6 +464,15 @@ function onFormSubmit(e) {
       }
     }
 
+    // Nombres en MAYÚSCULAS (convención de Pacientes), aunque el formulario
+    // los envíe en minúsculas.
+    newRow[7] = _mayusNombre(newRow[7])
+    newRow[8] = _mayusNombre(newRow[8])
+
+    var rutRecibido = _normRUN(newRow[6])
+    var rutRecibidoOK = /^\d{7,8}-[0-9K]$/.test(rutRecibido) && _validarDigitoRUT(rutRecibido)
+    if (rutRecibido) newRow[6] = rutRecibido
+
     var lr = stagingSh.getLastRow()
     var nr = Math.max(lr + 1, 5)
     if (nr > stagingSh.getMaxRows()) stagingSh.insertRowsAfter(stagingSh.getMaxRows(), nr - stagingSh.getMaxRows() + 10)
@@ -388,6 +480,10 @@ function onFormSubmit(e) {
     _estiloFila(stagingSh, nr, lc)
     _colorEstado(stagingSh, nr, 'Pendiente', lc)
     _miniResumenForm(stagingSh)
+    if (rutRecibido && !rutRecibidoOK) {
+      stagingSh.getRange(nr, 7).setBackground('#FEE2E2').setFontColor('#B91C1C').setFontWeight('bold')
+      stagingSh.getRange(nr, 7).setNote('⚠️ RUN inválido: revisa el dígito verificador (formato 12345678-5)')
+    }
   } catch(err) {
     console.log('onFormSubmit: ' + err.message)
   }
@@ -421,33 +517,43 @@ function aprobarFormularios() {
       var estado = String(data[r][2] || '').trim()
       if (estado === 'Rechazado') {
         rechRows.push(rowNum)
-      } else if (estado === 'Aprobado') {
-        if (!data[r][6] || String(data[r][6]).trim() === '') continue
-        if (!data[r][7] || String(data[r][7]).trim() === '') continue
+      } else if (estado === 'Gestionado') {
+        if (!data[r][6] || String(data[r][6]).trim() === '') {
+          sh.getRange(rowNum, 7).setNote('⚠️ Falta el RUN: complétalo y vuelve a aprobar')
+          sh.getRange(rowNum, 7).setBackground('#FEF3C7').setFontColor('#A16207').setFontWeight('bold')
+          continue
+        }
+        if (!data[r][7] || String(data[r][7]).trim() === '') {
+          sh.getRange(rowNum, 8).setNote('⚠️ Falta el nombre: complétalo y vuelve a aprobar')
+          sh.getRange(rowNum, 8).setBackground('#FEF3C7').setFontColor('#A16207').setFontWeight('bold')
+          continue
+        }
+        var rutNorm = _normRUN(data[r][6])
+        var rutOK = /^\d{7,8}-[0-9K]$/.test(rutNorm) && _validarDigitoRUT(rutNorm)
+        if (!rutOK) {
+          sh.getRange(rowNum, 7).setNote('⚠️ RUN inválido (formato 12345678-5 con dígito verificador correcto). Corrígelo y vuelve a aprobar.')
+          sh.getRange(rowNum, 7).setBackground('#FEE2E2').setFontColor('#B91C1C').setFontWeight('bold')
+          continue
+        }
         aprobRows.push({ row: rowNum, data: data[r] })
       }
-
     }
 
     // (las filas no se eliminan aún: primero se transfieren a Pacientes)
     for (var i = 0; i < aprobRows.length; i++) {
       var rn = aprobRows[i].row
-      var curAprob = String(data[rn - 6][3] || '').trim()
-      var curFecha = data[rn - 6][4]
-      if (!curAprob) sh.getRange(rn, 4).setValue(email)
-      if (!curFecha) {
-        sh.getRange(rn, 5).setValue(now).setNumberFormat('dd/mm/yyyy hh:mm')
-      }
+      var cur = aprobRows[i].data
+      if (!String(cur[3] || '').trim()) sh.getRange(rn, 4).setValue(email)
+      if (!cur[4]) sh.getRange(rn, 5).setValue(now).setNumberFormat('dd/mm/yyyy hh:mm')
     }
 
-    var formRows = aprobRows.map(function(a) { return a.data })
-    var transferidos = formRows.length ? _batchCopiarFormularios(formRows) : 0
-    if (transferidos > 0) recalcularTodo()
+    var transferidos = aprobRows.length ? _batchCopiarFormularios(aprobRows) : []
+    if (transferidos.length) recalcularTodo()
 
-    // Eliminar SOLO filas (nunca hojas): Aprobados (ya copiados a Pacientes)
+    // Eliminar SOLO filas (nunca hojas): Aprobados (ya copiados a Pacientes) y Rechazados
 
     var aEliminar = rechRows.slice()
-    for (var i = 0; i < aprobRows.length; i++) aEliminar.push(aprobRows[i].row)
+    for (var i = 0; i < transferidos.length; i++) aEliminar.push(transferidos[i])
     aEliminar.sort(function(a, b) { return b - a })
     var eliminados = 0
     for (var i = 0; i < aEliminar.length; i++) {
@@ -455,10 +561,9 @@ function aprobarFormularios() {
     }
 
     var msg = []
-    if (transferidos) msg.push(transferidos + ' transferidos a Pacientes')
-    if (aprobRows.length) msg.push(aprobRows.length + ' aprobados eliminados de recepción')
+    if (transferidos.length) msg.push(transferidos.length + ' transferidos a Pacientes')
     if (rechRows.length) msg.push(rechRows.length + ' rechazados eliminados')
-    ss.toast(msg.length ? msg.join(', ') : 'No hay Aprobados ni Rechazados para procesar. Pendientes se saltan.', 'PADDS', 4)
+    ss.toast(msg.length ? msg.join(', ') : 'No hay Gestionados ni Rechazados para procesar. Pendientes se saltan.', 'PADDS', 4)
     _miniResumenForm(sh)
   } finally {
     lock.releaseLock()
@@ -466,10 +571,10 @@ function aprobarFormularios() {
 }
 
 function _batchCopiarFormularios(formRows) {
-  if (!formRows.length) return 0
+  if (!formRows.length) return []
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var pac = ss.getSheetByName(HOJA_PAC)
-  if (!pac) return 0
+  if (!pac) return []
 
   var lr = pac.getLastRow()
   var lc = pac.getLastColumn()
@@ -480,8 +585,11 @@ function _batchCopiarFormularios(formRows) {
   if (lr >= 4) {
     pacData = pac.getRange(4, 1, lr - 3, lc).getValues()
     for (var i = 0; i < pacData.length; i++) {
-      var rut = String(pacData[i][COL.RUN - 1] || '').replace(/\./g, '').replace(/\s/g, '').toUpperCase()
-      if (rut) runMap[rut] = { row: i + 4, data: pacData[i] }
+      var rut = _normRUN(pacData[i][COL.RUN - 1])
+      if (rut) {
+        runMap[rut] = { row: i + 4, data: pacData[i] }
+        if (rut.indexOf('-') >= 0) runMap[rut.replace('-', '')] = runMap[rut]
+      }
       var id = Number(pacData[i][COL.ID - 1])
       if (id > maxId) maxId = id
     }
@@ -489,21 +597,27 @@ function _batchCopiarFormularios(formRows) {
 
   var newRows = []
   var updated = 0
+  var hechos = []
 
   for (var r = 0; r < formRows.length; r++) {
-    var formRut = String(formRows[r][6] || '').replace(/\./g, '').replace(/\s/g, '').toUpperCase()
+    var formData = formRows[r].data
+    var formRut = _normRUN(formData[6])
     if (!formRut) continue
 
-    var fechaAtencion = formRows[r][5]
-    var prestacion = String(formRows[r][10] || '').trim()
+    var found = runMap[formRut] || runMap[formRut.replace('-', '')]
+
+    var fechaAtencion = formData[5]
+    var fechaOk = fechaAtencion != null && _parseDate(fechaAtencion) != null
+    var prestacion = String(formData[10] || '').trim()
     var prestNorm = prestacion.toUpperCase()
       .replace(/[ÁÀÄÂ]/g,'A').replace(/[ÉÈËÊ]/g,'E').replace(/[ÍÌÏÎ]/g,'I')
       .replace(/[ÓÒÖÔ]/g,'O').replace(/[ÚÙÜÛ]/g,'U')
     var servicioCol = _SERVICIO_COL_MAP[prestNorm] || _SERVICIO_SI_MAP[prestNorm]
-    var observaciones = String(formRows[r][16] || '').trim()
-    var profesional = String(formRows[r][9] || '').trim()
-    var visitaPerdida = String(formRows[r][12] || '').trim()
-    var proxControlRaw = formRows[r][15]
+    if (!servicioCol && prestNorm.indexOf('SONDA') >= 0) servicioCol = COL.F_CAMBIO_SONDA
+    var observaciones = String(formData[16] || '').trim()
+    var profesional = String(formData[9] || '').trim()
+    var visitaPerdida = String(formData[12] || '').trim()
+    var proxControlRaw = formData[15]
     var proxControl = (proxControlRaw instanceof Date && !isNaN(proxControlRaw.getTime()))
       ? proxControlRaw : _parseDate(proxControlRaw)
 
@@ -511,12 +625,12 @@ function _batchCopiarFormularios(formRows) {
       ? Utilities.formatDate(fechaAtencion, Session.getScriptTimeZone(), 'dd/MM/yyyy')
       : Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy')
 
-    if (runMap[formRut]) {
+    if (found) {
       // ─── Existing patient: update service date and cumulative logs ────────
-      var pacRow = runMap[formRut].row
+      var pacRow = found.row
 
       if (servicioCol && servicioCol <= lc) {
-        var sv = _SERVICIO_SI_MAP[prestNorm] ? 'SI' : fechaAtencion
+        var sv = _SERVICIO_SI_MAP[prestNorm] ? 'SI' : (fechaOk ? fechaAtencion : '')
         if (sv) pac.getRange(pacRow, servicioCol, 1, 1).setValues([[sv]])
       }
 
@@ -526,33 +640,29 @@ function _batchCopiarFormularios(formRows) {
       if (visitaPerdida === 'SI') obsParts.push('Visita perdida')
       if (proxControl) obsParts.push('Próximo control: ' + Utilities.formatDate(proxControl, Session.getScriptTimeZone(), 'dd/MM/yyyy'))
       if (prestNorm.indexOf('CONTROL CUIDADOR') >= 0) obsParts.push('Control cuidador')
+      if (formData.length > 17 && String(formData[17] || '').trim().toUpperCase() === 'SI') obsParts.push('Paciente oncológico')
+      if (prestacion && !fechaOk) obsParts.push('⚠️ Fecha de atención inválida')
       if (obsParts.length) {
-        var obsLine = '[' + fechaStr + '] ' + obsParts.join(' | ')
-        var obsOld = String(runMap[formRut].data[COL.OBSERVACIONES - 1] || '').trim()
-        var obsLines = obsOld ? obsOld.split('\n') : []
-        var obsDupe = false
-        for (var oli = 0; oli < obsLines.length; oli++) {
-          if (obsLines[oli] === obsLine) { obsDupe = true; break }
-        }
-        if (!obsDupe) {
+        var obsLine = '[' + fechaStr + '] ' + obsParts.join('\n    ')
+        var obsOld = String(found.data[COL.OBSERVACIONES - 1] || '').trim()
+        var obsFlat = obsOld.replace(/\s+/g, ' ').trim()
+        var lineFlat = obsLine.replace(/\s+/g, ' ').trim()
+        if (!obsFlat || obsFlat.indexOf(lineFlat) === -1) {
           var obsCell = pac.getRange(pacRow, COL.OBSERVACIONES)
-          obsCell.setValues([[obsOld ? obsOld + '\n' + obsLine : obsLine]])
-          obsCell.setWrapStrategy(SpreadsheetApp.WrapStrategy.OVERFLOW)
+          obsCell.setValues([[obsOld ? obsOld + '\n\n' + obsLine : obsLine]])
+          obsCell.setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
         }
       }
 
       if (prestacion) {
-        var mcOld = String(runMap[formRut].data[COL.CONTROLES_MISCELANEOS - 1] || '').trim()
+        var mcOld = String(found.data[COL.CONTROLES_MISCELANEOS - 1] || '').trim()
         var mcLine = '[' + fechaStr + '] ' + prestacion
-        var mcLines = mcOld ? mcOld.split('\n') : []
-        var mcDupe = false
-        for (var mli = 0; mli < mcLines.length; mli++) {
-          if (mcLines[mli] === mcLine) { mcDupe = true; break }
-        }
-        if (!mcDupe) {
+        var mcFlat = mcOld.replace(/\s+/g, ' ').trim()
+        var mcLineFlat = mcLine.replace(/\s+/g, ' ').trim()
+        if (!mcFlat || mcFlat.indexOf(mcLineFlat) === -1) {
           var mcCell = pac.getRange(pacRow, COL.CONTROLES_MISCELANEOS)
           mcCell.setValues([[mcOld ? mcOld + '\n' + mcLine : mcLine]])
-          mcCell.setWrapStrategy(SpreadsheetApp.WrapStrategy.OVERFLOW)
+          mcCell.setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
         }
       }
 
@@ -562,13 +672,13 @@ function _batchCopiarFormularios(formRows) {
 
       for (var fi = 0; fi < FORM_A_PAC.length; fi++) {
         var fpCol = FORM_A_PAC[fi][0] - 1, ppCol = FORM_A_PAC[fi][1] - 1
-        if (fpCol < formRows[r].length && ppCol >= 0 && ppCol < lc
+        if (fpCol < formData.length && ppCol >= 0 && ppCol < lc
             && fpCol !== 5 && ppCol !== COL.OBSERVACIONES - 1) {
-          var fv = formRows[r][fpCol]
+          var fv = formData[fpCol]
           if (fv !== undefined && fv !== null && String(fv).trim() !== '') {
             var fvs = String(fv).trim()
-            var valMap = _FORM_VAL_MAP[ppCol + 1]
-            if (valMap && valMap[fvs]) fvs = valMap[fvs]
+            fvs = _formValorNormalizado(ppCol + 1, fvs)
+            if (ppCol === COL.NOMBRE - 1 || ppCol === COL.APELLIDO - 1) fvs = _mayusNombre(fvs)
             pac.getRange(pacRow, ppCol + 1, 1, 1).setValues([[fvs]])
           }
         }
@@ -583,33 +693,39 @@ function _batchCopiarFormularios(formRows) {
         blank.push(c === COL.ID - 1 ? maxId : c === COL.VITAL - 1 ? 'VIGENTE' : '')
       }
 
+      blank[COL.RUN - 1] = formRut
+
       for (var i = 0; i < FORM_A_PAC.length; i++) {
         var fCol = FORM_A_PAC[i][0] - 1, pCol = FORM_A_PAC[i][1] - 1
-        if (fCol < formRows[r].length && pCol >= 0 && pCol < lc) {
-          var val = formRows[r][fCol]
+        if (fCol < formData.length && pCol >= 0 && pCol < lc) {
+          var val = formData[fCol]
           if (val !== undefined && val !== null && String(val).trim() !== '') {
             var vs = String(val).trim()
-            var valMap = _FORM_VAL_MAP[pCol + 1]
-            blank[pCol] = valMap && valMap[vs] ? valMap[vs] : vs
+            vs = _formValorNormalizado(pCol + 1, vs)
+            if (pCol === COL.NOMBRE - 1 || pCol === COL.APELLIDO - 1) vs = _mayusNombre(vs)
+            blank[pCol] = vs
           }
         }
       }
 
-      if (servicioCol && servicioCol <= lc) {
+      if (servicioCol && servicioCol <= lc && fechaOk) {
         blank[servicioCol - 1] = _SERVICIO_SI_MAP[prestNorm] ? 'SI' : fechaAtencion
       }
 
-      var obsParts = []
-      if (prestacion) obsParts.push('Prestación: ' + prestacion)
-      if (observaciones) obsParts.push('Obs: ' + observaciones)
-      if (visitaPerdida === 'SI') obsParts.push('Visita perdida')
-      if (proxControl) obsParts.push('Próximo control: ' + Utilities.formatDate(proxControl, Session.getScriptTimeZone(), 'dd/MM/yyyy'))
-      if (obsParts.length) blank[COL.OBSERVACIONES - 1] = '[' + fechaStr + '] ' + obsParts.join(' | ')
+      var obsParts2 = []
+      if (prestacion) obsParts2.push('Prestación: ' + prestacion)
+      if (observaciones) obsParts2.push('Obs: ' + observaciones)
+      if (visitaPerdida === 'SI') obsParts2.push('Visita perdida')
+      if (proxControl) obsParts2.push('Próximo control: ' + Utilities.formatDate(proxControl, Session.getScriptTimeZone(), 'dd/MM/yyyy'))
+      if (formData.length > 17 && String(formData[17] || '').trim().toUpperCase() === 'SI') obsParts2.push('Paciente oncológico')
+      if (prestacion && !fechaOk) obsParts2.push('⚠️ Fecha de atención inválida')
+      if (obsParts2.length) blank[COL.OBSERVACIONES - 1] = '[' + fechaStr + '] ' + obsParts2.join(' | ')
 
       if (prestacion) blank[COL.CONTROLES_MISCELANEOS - 1] = '[' + fechaStr + '] ' + prestacion
 
       newRows.push(blank)
     }
+    hechos.push(formRows[r].row)
   }
 
   if (newRows.length > 0) {
@@ -622,15 +738,15 @@ function _batchCopiarFormularios(formRows) {
     rng.setFontColor('#000000')
     rng.setFontWeight('normal')
     rng.setFontStyle('normal')
-    pac.getRange(nr, COL.OBSERVACIONES, newRows.length, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.OVERFLOW)
-    pac.getRange(nr, COL.CONTROLES_MISCELANEOS, newRows.length, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.OVERFLOW)
-    pac.setRowHeights(nr, newRows.length, 24)
+    pac.getRange(nr, COL.OBSERVACIONES, newRows.length, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
+    pac.getRange(nr, COL.CONTROLES_MISCELANEOS, newRows.length, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
+    pac.setRowHeights(nr, newRows.length, 26)
   }
 
   try { _borrarFilasVacias(pac, 4) } catch (eV) {}
 
   ss.toast(updated + ' pacientes actualizados, ' + newRows.length + ' pacientes creados desde formularios', 'PADDS', 4)
-  return updated + newRows.length
+  return hechos
 }
 
 function rechazarFormularios() {
@@ -655,12 +771,19 @@ function rechazarFormularios() {
 
     if (rechRows.length === 0) { ss.toast('No hay Pendientes para rechazar', 'Formulario', 3); return }
 
-    var rng = sh.getRange(rechRows[0], 3, rechRows.length, 3)
+    var rng = sh.getRange(rechRows[0], 3, rechRows.length, 1)
     var vals = []
-    for (var i = 0; i < rechRows.length; i++) vals.push(['Rechazado', email, new Date()])
+    for (var i = 0; i < rechRows.length; i++) vals.push(['Rechazado'])
     rng.setValues(vals)
-    sh.getRange(rechRows[0], 5, rechRows.length, 1).setNumberFormat('dd/mm/yyyy hh:mm')
-    for (var i = 0; i < rechRows.length; i++) _colorEstado(sh, rechRows[i], 'Rechazado', sh.getLastColumn())
+    var _quien = email + ' · ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm')
+    // Las filas Pendiente NO son contiguas: escribir un rango bloque sobrescribiría
+    // el ESTADO de filas intermedias (corrupción). Se escribe fila por fila.
+    for (var i = 0; i < rechRows.length; i++) {
+      var rnR = rechRows[i]
+      sh.getRange(rnR, 3).setValue('Rechazado')
+      sh.getRange(rnR, 3).setNote('Rechazado por: ' + _quien)
+      _colorEstado(sh, rnR, 'Rechazado', sh.getLastColumn())
+    }
 
     ss.toast(rechRows.length + ' formularios marcados como Rechazado (usa Sincronizar para eliminar)', 'Formulario', 4)
     _miniResumenForm(sh)
@@ -683,17 +806,17 @@ function limpiarFormulariosAprobados() {
   var aLimpiar = 0
 
   for (var r = data.length - 1; r >= 0; r--) {
-    if (String(data[r][2] || '').trim() === 'Aprobado' || String(data[r][2] || '').trim() === 'Rechazado') {
+    if (String(data[r][2] || '').trim() === 'Gestionado' || String(data[r][2] || '').trim() === 'Rechazado') {
       aLimpiar++
     }
   }
 
-  if (aLimpiar === 0) { ui.alert('No hay formularios aprobados o rechazados para limpiar.'); return }
-  if (ui.alert('Limpiar', '¿Eliminar ' + aLimpiar + ' formularios aprobados o rechazados?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return
+  if (aLimpiar === 0) { ui.alert('No hay formularios gestionados o rechazados para limpiar.'); return }
+  if (ui.alert('Limpiar', '¿Eliminar ' + aLimpiar + ' formularios gestionados o rechazados?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return
 
   var grupos = [], start = -1
   for (var r = data.length - 1; r >= 0; r--) {
-    if (String(data[r][2] || '').trim() === 'Aprobado' || String(data[r][2] || '').trim() === 'Rechazado') {
+    if (String(data[r][2] || '').trim() === 'Gestionado' || String(data[r][2] || '').trim() === 'Rechazado') {
       if (start < 0) { start = r + 5; grupos.push([start, 1]) }
       else { grupos[grupos.length - 1][1]++ }
     } else { start = -1 }
@@ -705,4 +828,3 @@ function limpiarFormulariosAprobados() {
   _miniResumenForm(sh)
   SpreadsheetApp.getActiveSpreadsheet().toast(aLimpiar + ' formularios eliminados de la hoja', 'PADDS', 3)
 }
-

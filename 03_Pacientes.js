@@ -12,9 +12,9 @@ var _FECHAS_COLOR = []
     _FECHAS_COLOR.push([_CONTROL_FECHAS[_fiC][1], _CONTROL_FECHAS[_fiC][2]])
   }
 
-  _FECHAS_COLOR.push([79, 'PAÑALES'])
-  _FECHAS_COLOR.push([80, 'INMUNIZACION'], [81, 'INMUNIZACION'])
-  _FECHAS_COLOR.push([82, 'INMUNIZACION'], [83, 'INMUNIZACION'])
+  _FECHAS_COLOR.push([80, 'PAÑALES'])
+  _FECHAS_COLOR.push([81, 'INMUNIZACION'], [82, 'INMUNIZACION'])
+  _FECHAS_COLOR.push([83, 'INMUNIZACION'], [84, 'INMUNIZACION'])
   for (var _fcCap = COL.CAP_INI; _fcCap <= COL.CAP_FIN; _fcCap++) {
     _FECHAS_COLOR.push([_fcCap, 'CAPACITACIONES'])
   }
@@ -24,6 +24,7 @@ for (var _fbm = 0; _fbm < _FECHAS_COLOR.length; _fbm++) _FECHAS_BY_COL[_FECHAS_C
 
 function _mesesControl(params, key) {
   var k = String(key || '').toUpperCase()
+  if (params && params['_DESACTIVADO_' + k]) return null
   if (params && params[k] !== undefined && params[k] !== null && !isNaN(Number(params[k]))) {
     return Number(params[k])
   }
@@ -55,10 +56,10 @@ function _precalcularMeses(params) {
 // lista de un vistazo (rojo urgente · naranjo por revisar · verde al día ·
 
 var _PRIORIDAD_TIRA_COLORS = {
-  'URGENTE':     { bg: '#FFEBEE', fg: '#C62828' },
-  'POR REVISAR': { bg: '#FFF3E0', fg: '#E65100' },
-  'AL DIA':      { bg: '#E8F5E9', fg: '#2E7D32' },
-  'N/A':         { bg: '#ECEFF1', fg: '#78909C' },
+  'URGENTE':     { bg: '#FEE2E2', fg: '#B91C1C' },
+  'POR REVISAR': { bg: '#FFEDD5', fg: '#C2410C' },
+  'AL DIA':      { bg: '#DCFCE7', fg: '#15803D' },
+  'N/A':         { bg: '#EEF1F5', fg: '#64748B' },
 }
 
 function _pintarTiraPrioridad(sh, row, p) {
@@ -74,20 +75,20 @@ function buscarEnPacientes() {
   var html =
 '<html><head><base target="_top"><style>' +
 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:0;color:#202124;font-size:14px;background:#fff}' +
-'.bar{position:sticky;top:0;background:#fff;padding:12px 12px 8px;border-bottom:1px solid #e0e0e0;z-index:10}' +
-'.bar input{width:100%;box-sizing:border-box;padding:10px 12px;font-size:14px;border:2px solid #dadce0;border-radius:8px;outline:none}' +
-'.bar input:focus{border-color:#1a73e8}' +
-'.bar .info{font-size:11px;color:#5f6368;margin-top:4px;text-align:right}' +
+'.bar{position:sticky;top:0;background:#fff;padding:12px 12px 8px;border-bottom:1px solid #E2E8F0;z-index:10}' +
+'.bar input{width:100%;box-sizing:border-box;padding:10px 12px;font-size:14px;border:2px solid #CBD5E1;border-radius:8px;outline:none}' +
+'.bar input:focus{border-color:#0F766E}' +
+'.bar .info{font-size:11px;color:#64748B;margin-top:4px;text-align:right}' +
 '#res{overflow-y:auto;padding:4px 0}' +
-'.it{padding:8px 12px;border-bottom:1px solid #f0f0f0;cursor:pointer}' +
-'.it:hover{background:#e8f0fe}' +
+'.it{padding:8px 12px;border-bottom:1px solid #F1F5F9;cursor:pointer}' +
+'.it:hover{background:#CCFBF1}' +
 '.it .nom{font-size:14px;font-weight:500;color:#1a1a1a;line-height:1.3}' +
-'.it .det{font-size:12px;color:#5f6368;margin-top:2px}' +
+'.it .det{font-size:12px;color:#64748B;margin-top:2px}' +
 '.it .det span{margin-right:12px}' +
-'.it .rut{font-family:Consolas,monospace;font-size:12px;color:#1a73e8}' +
+'.it .rut{font-family:Consolas,monospace;font-size:12px;color:#0F766E}' +
 '.it .tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:500}' +
-'.tag-v{background:#e8f5e9;color:#2e7d32}.tag-f{background:#fce4ec;color:#c62828}.tag-e{background:#fff3e0;color:#e65100}.tag-s{background:#f3e5f5;color:#6a1b9a}.tag-p{background:#fff8e1;color:#f57f17}' +
-'.vacio{padding:40px 12px;text-align:center;color:#9aa0a6;font-size:13px}' +
+'.tag-v{background:#DCFCE7;color:#15803D}.tag-f{background:#FCE7F3;color:#B91C1C}.tag-e{background:#FFEDD5;color:#C2410C}.tag-s{background:#F3E8FF;color:#7E22CE}.tag-p{background:#FEF3C7;color:#B45309}' +
+'.vacio{padding:40px 12px;text-align:center;color:#94A3B8;font-size:13px}' +
 '</style></head><body>' +
 '<div class="bar"><input type="text" id="q" placeholder="Nombre, RUN, apellido..." autofocus>' +
 '<div class="info" id="cta"></div></div>' +
@@ -194,6 +195,9 @@ function aplicarFiltroBusqueda(optTerm) {
 
   if (term === '') {
     sh.getRange('D2').setValue('')
+    sh.showRows(4, lr - 3)
+    var _lcR = sh.getLastColumn()
+    try { sh.getRange(3, 1, lr - 2, _lcR).createFilter() } catch (eF) {}
     return
   }
 
@@ -281,7 +285,7 @@ function agregarPaciente() {
     sh.getRange(lr, 1, 1, lc).copyTo(sh.getRange(nr, 1, 1, lc))
   }
   sh.getRange(nr, 1, 1, lc).setStrikethrough(false).setUnderline(false)
-  sh.setRowHeight(nr, 24)
+  sh.setRowHeight(nr, 26)
 
   var num = maxId + 1
 
@@ -295,14 +299,25 @@ function agregarPaciente() {
 
   try {
     var _ix = nr - 4
-    var _fzBg = _ix % 2 === 0 ? '#f0f4f8' : '#e4ecf3'
-    var _dtBg = _ix % 2 === 0 ? '#fafafa' : '#ffffff'
+  var _fzBg = _UI.frozenBg[_ix % 2]
+  var _dtBg = _UI.zebraBg[_ix % 2]
     var _nrBgs = []
     for (var _nc = 0; _nc < lc; _nc++) _nrBgs.push(_nc < 5 ? _fzBg : _dtBg)
     sh.getRange(nr, 1, 1, lc).setBackgrounds([_nrBgs])
       .setFontFamily('Arial').setFontSize(10).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID)
+      .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
   } catch(eN) {}
+
+  try {
+    for (var _pc = 0; _pc < lc; _pc++) {
+      var _pcN = _pc + 1
+      if (_pcN === COL.SECTOR || _pcN === COL.VITAL) continue
+      if (_CHECKBOX_COLS.indexOf(_pcN) >= 0) continue
+      if (PAC_VALIDACIONES[_pcN]) _pintarCeldaOpcion(sh, nr, _pcN)
+    }
+    _pintarRUT(sh, nr, COL.RUN, '')
+    _pintarRUT(sh, nr, COL.RUN_CUIDADOR, '')
+  } catch(ePc) {}
 
   _actualizarEstadosFila(nr)
 
@@ -444,6 +459,7 @@ function _actualizarEstadosFila(row) {
   }
 
   try { _colorearFechasFila(row, sh, lc, _params, _diasAviso, rowData, null, _M.f) } catch(e) {}
+  try { _pintarFechasInvalidas(sh, row, lc, row) } catch(ePI) {}
 
   var _estadoRaw = String(rowData[COL.ESTADO - 1] || '').trim()
   var _estadoNorm = _normalizarVitalEstado(_estadoRaw)
@@ -637,8 +653,8 @@ function _colorearEdadPorEMPA(sh, lr, lc) {
   for (var i = 0; i < r; i++) {
     var valC = empaCCol <= lc ? String(data[i][empaCCol - c1] || '').trim() : ''
     var valU = empaUCol <= lc ? String(data[i][empaUCol - c1] || '').trim() : ''
-    bgC.push([valC === 'EMPA' ? '#e3f2fd' : valC === 'EMPAM' ? '#f3e5f5' : valC === 'N/A' ? '#f5f5f5' : '#ffffff'])
-    bgU.push([valU === 'EMPA' ? '#e3f2fd' : valU === 'EMPAM' ? '#f3e5f5' : valU === 'N/A' ? '#f5f5f5' : '#ffffff'])
+          bgC.push([valC === 'EMPA' ? '#E0F2FE' : valC === 'EMPAM' ? '#F3E8FF' : valC === 'N/A' ? '#F1F5F9' : '#ffffff'])
+          bgU.push([valU === 'EMPA' ? '#E0F2FE' : valU === 'EMPAM' ? '#F3E8FF' : valU === 'N/A' ? '#F1F5F9' : '#ffffff'])
   }
   if (empaCCol <= lc && edadCCol <= lc) sh.getRange(4, edadCCol, r, 1).setBackgrounds(bgC)
   if (empaUCol <= lc && edadUCol <= lc) sh.getRange(4, edadUCol, r, 1).setBackgrounds(bgU)
@@ -744,15 +760,19 @@ function formatearRUTPacientes(confirmado) {
     var col = runCols[ci]
     var data2 = sh.getRange(4, col, rows, 1).getValues()
     var notes = sh.getRange(4, col, rows, 1).getNotes()
+    var bgs = [], fgs = []
     for (var i = 0; i < rows; i++) {
       var val = String(data2[i][0] || '').trim()
-      var nota = (val && val.indexOf('-') > 0 && val.length >= 4 && !_validarDigitoRUT(val)) ? _NOTA_RUN_INV : ''
+      var nota = (val && val.indexOf('-') > 0 && val.length >= 4) ? (_notaRUN(val) || '') : ''
       if (nota) invalidos++
+          bgs.push([nota ? '#FEE2E2' : ((i + 4) % 2 === 0 ? _UI.zebraBg[0] : _UI.zebraBg[1])])
+          fgs.push([nota ? '#B91C1C' : '#000000'])
       if (String(notes[i][0] || '') !== nota) sh.getRange(i + 4, col).setNote(nota || null)
     }
+    sh.getRange(4, col, rows, 1).setBackgrounds(bgs).setFontColors(fgs)
   }
   var msg = total + ' RUN formateados'
-  if (invalidos > 0) msg += ' (' + invalidos + ' con dígito verificador incorrecto — revisa las notas en las celdas)'
+  if (invalidos > 0) msg += ' (' + invalidos + ' con dígito verificador incorrecto — resaltados en rojo)'
   if (!confirmado) ss.toast(msg, 'Verificación de RUN', 4)
 }
 
@@ -766,7 +786,7 @@ function verificarIntegridadRUN() {
   var sh = chk.sh
   var lr = sh.getLastRow()
   if (lr < 4) { ui.alert('Verificar RUN', 'No hay datos en ' + HOJA_PAC + '.', ui.ButtonSet.OK); return }
-  var lc = Math.min(sh.getLastColumn(), 111)
+  var lc = Math.min(sh.getLastColumn(), 112)
   var data = sh.getRange(4, 1, lr - 3, lc).getValues()
 
   var invalidos = [], sinRun = [], dups = {}
@@ -802,9 +822,9 @@ function verificarIntegridadRUN() {
     return s
   }
   var html = '<style>body{font-family:Arial;font-size:13px;color:#333}' +
-    '.sec{margin:10px 0}.h{font-weight:bold;margin:4px 0}.b{background:#f5f5f5;border-radius:6px;padding:8px}' +
+    '.sec{margin:10px 0}.h{font-weight:bold;margin:4px 0}.b{background:#F1F5F9;border-radius:6px;padding:8px}' +
     '.row{padding:2px 0;border-bottom:1px solid #ddd}.dim{color:#888}' +
-    '.bad{color:#c62828}.warn{color:#e65100}</style><body>'
+    '.bad{color:#B91C1C}.warn{color:#C2410C}</style><body>'
   html += '<h3>🔎 Verificación de RUN</h3>' +
     '<div class="sec"><div class="h bad">⚠️ Dígito verificador inválido: ' + invalidos.length + '</div>' +
     '<div class="b">' + _filas(invalidos, 25) + '</div></div>' +
@@ -818,7 +838,7 @@ function verificarIntegridadRUN() {
     '<div class="sec"><div class="h warn">❓ Pacientes sin RUN: ' + sinRun.length + '</div>' +
     '<div class="b">' + _filas(sinRun, 20) + '</div></div>' +
     '<div class="sec dim">Las celdas con dígito incorrecto ya llevan una nota ⚠️ en la celda. ' +
-    'Para reformatear o limpiar notas usa 🛠️ Mantenimiento → "Corregir datos (…)".</div></body>'
+    'Para reformatear o limpiar notas usa 🛠️ Datos → "✨ Corregir datos (…)".</div></body>'
   ui.showSidebar(HtmlService.createHtmlOutput(html).setTitle('Verificación de RUN').setWidth(380))
 }
 
@@ -873,7 +893,7 @@ function ordenarPacientes() {
 
   var ui = SpreadsheetApp.getUi()
   var resp = ui.alert('Ordenar Pacientes',
-    'Ordenar todas las filas alfabéticamente por APELLIDO (col C)?\nEl índice (col A) se mueve con cada paciente.',
+    'Ordenar todas las filas alfabéticamente por APELLIDO (col D)?\nEl índice (col A) se mueve con cada paciente.',
     ui.ButtonSet.YES_NO)
   if (resp !== ui.Button.YES) return
   var col = COL.APELLIDO
@@ -967,7 +987,7 @@ function _buildSeccionesHtml(headers, data, lc, vig, o) {
     var sec = PAC_SECCIONES[si]
     if (sec.ini > lc) break
     var fin = Math.min(sec.fin, lc)
-    var cBg = sec.bg || '#1F3A5F'
+    var cBg = sec.bg || '#1E293B'
     var hBg = o.hdrBg ? (typeof o.hdrBg === 'function' ? o.hdrBg(si, cBg) : o.hdrBg) : cBg
     var lBg = o.lBgFor(si)
     var pairs = []
@@ -1019,39 +1039,39 @@ function _buildFichaSidebarHtml(headers, data, lc, autor, row) {
   p.push('<html><head><base target="_top"><meta charset="UTF-8"><style>')
   p.push('*{box-sizing:border-box}')
   p.push('body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;color:#212529;font-size:13px;background:#eef1f5}')
-  p.push('.hdr{background:#1F3A5F;color:#fff;padding:16px 18px 14px;border-bottom:3px solid #B9973C}')
+  p.push('.hdr{background:#1E293B;color:#fff;padding:16px 18px 14px;border-bottom:3px solid #0F766E}')
   p.push('.hdr .nom{font-size:17px;font-weight:700;line-height:1.3}')
-  p.push('.hdr .sub{font-size:11px;color:#C7D3E0;margin-top:6px;text-transform:uppercase;letter-spacing:0.8px}')
+  p.push('.hdr .sub{font-size:11px;color:#CBD5E1;margin-top:6px;text-transform:uppercase;letter-spacing:0.8px}')
   p.push('.hdr .sub sp{display:inline-block;margin-right:18px}')
   p.push('.badge{display:inline-block;padding:2px 10px;border-radius:3px;font-size:11px;font-weight:600;color:#fff}')
-  p.push('.tag-v{background:#1E7A46}.tag-f{background:#B3261E}.tag-e{background:#B26A00}.tag-s{background:#6D4B9E}.tag-d{background:#5F6B7A}')
+  p.push('.tag-v{background:#15803D}.tag-f{background:#B91C1C}.tag-e{background:#C2410C}.tag-s{background:#7E22CE}.tag-d{background:#475569}')
   p.push('.bar-info{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid #e3e8ef;font-size:12px}')
   p.push('.bar-info .b{background:#f4f6f8;border:1px solid #e3e8ef;border-radius:4px;padding:4px 10px}')
   p.push('.bar-info .l{color:#8a94a6;font-size:9.5px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}')
   p.push('table{width:100%;border-collapse:collapse;margin:8px 0;background:#fff}')
-  p.push('.sh{font-size:11px;font-weight:700;color:#fff;padding:7px 12px;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #B9973C}')
+  p.push('.sh{font-size:11px;font-weight:700;color:#fff;padding:7px 12px;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #0F766E}')
   p.push('td{padding:4px 10px;font-size:12px;border:1px solid #e6eaf0;width:25%}')
   p.push('td.l{font-weight:600;color:#5a6474;background:#f4f6f8;border-left:2px solid #dfe5ec}')
   p.push('td.v{color:#212529}')
   p.push('.vacio{color:#b0b8c4;font-style:italic}')
-  p.push('.s-n{color:#8a94a6} .s-v{color:#B3261E;font-weight:600} .s-d{color:#1E7A46;font-weight:600}')
-  p.push('.s-p{color:#B26A00;font-weight:600} .s-x{color:#6D4B9E;font-weight:600}')
+  p.push('.s-n{color:#8a94a6} .s-v{color:#B91C1C;font-weight:600} .s-d{color:#15803D;font-weight:600}')
+  p.push('.s-p{color:#C2410C;font-weight:600} .s-x{color:#7E22CE;font-weight:600}')
   p.push('.v-d,.v-pv,.v-vd,.v-pd,.v-na{display:inline-block;padding:0 6px;border-radius:2px;font-weight:600}')
-  p.push('.v-d{background:#e3f1e8;color:#1E7A46}.v-pv{background:#fbeed9;color:#B26A00}.v-vd{background:#f9e3e1;color:#B3261E}.v-pd{background:#f7f2d9;color:#8a6d00}.v-na{background:#eef1f5;color:#7a8494}')
+  p.push('.v-d{background:#e3f1e8;color:#15803D}.v-pv{background:#fbeed9;color:#C2410C}.v-vd{background:#f9e3e1;color:#B91C1C}.v-pd{background:#f7f2d9;color:#B45309}.v-na{background:#eef1f5;color:#7a8494}')
   p.push('.leyV{font-size:9.5px;color:#6b7484;line-height:1.8;padding:0 2px}')
   p.push('.leyV i{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 3px 0 8px;vertical-align:middle}')
   p.push('.leyV i:first-child{margin-left:0}')
   p.push('.csvbox{margin:8px 16px 0;background:#fff;border:1px solid #dce3ec;border-radius:4px;overflow:hidden}')
-  p.push('.csvhdr{background:#1F3A5F;color:#fff;font-size:11px;font-weight:700;padding:6px 12px;letter-spacing:0.4px}')
-  p.push('.csvhdr.venc{background:#B3261E}.csvhdr.pend{background:#B26A00}.csvcol{padding:8px 12px 6px}')
-  p.push('.csvsec{font-size:9px;color:#1F3A5F;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;margin:6px 0 4px}')
+  p.push('.csvhdr{background:#1E293B;color:#fff;font-size:11px;font-weight:700;padding:6px 12px;letter-spacing:0.4px}')
+  p.push('.csvhdr.venc{background:#B91C1C}.csvhdr.pend{background:#C2410C}.csvcol{padding:8px 12px 6px}')
+  p.push('.csvsec{font-size:9px;color:#1E293B;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;margin:6px 0 4px}')
   p.push('.csvit{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:3px 0;border-bottom:1px solid #f0f2f5}')
   p.push('.csvit:last-child{border-bottom:none}.csvl{color:#7a8494;font-size:10px}')
   p.push('.csvbox .v-d,.csvbox .v-pv,.csvbox .v-vd,.csvbox .v-pd,.csvbox .v-na{padding:0 6px}')
   p.push('.ftr{font-size:10px;color:#8a94a6;text-align:center;padding:12px 16px;border-top:1px solid #e3e8ef;margin-top:8px;background:#fff}')
-  p.push('.bar-btn{position:sticky;bottom:0;padding:10px 16px;background:#fff;border-top:2px solid #1F3A5F;text-align:center}')
-  p.push('.bar-btn button{background:#1F3A5F;color:#fff;border:none;padding:9px 26px;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer}')
-  p.push('.bar-btn button:hover{background:#16304F}')
+  p.push('.bar-btn{position:sticky;bottom:0;padding:10px 16px;background:#fff;border-top:2px solid #1E293B;text-align:center}')
+  p.push('.bar-btn button{background:#1E293B;color:#fff;border:none;padding:9px 26px;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer}')
+  p.push('.bar-btn button:hover{background:#0F172A}')
   p.push('</style></head><body>')
 
   p.push('<div class="hdr"><div class="nom">' + _esc(n) + '</div>')
@@ -1096,11 +1116,11 @@ function _buildFichaSidebarHtml(headers, data, lc, autor, row) {
   }
 
   p.push(_buildSeccionesHtml(headers, data, lc, vig, {
-    hdrCls: 'sh', hdrBg: function() { return '#1F3A5F' },
+    hdrCls: 'sh', hdrBg: function() { return '#1E293B' },
     lBgFor: function(si) { return si % 2 === 0 ? '#ffffff' : '#f8fafc' }, skipEmpty: true }))
 
   p.push('<div class="ftr">')
-  p.push('<div class="leyV"><i style="background:#c8e6c9"></i>AL DIA<i style="background:#ffe0b2"></i>POR VENCER<i style="background:#ffcdd2"></i>VENCIDO<i style="background:#fff9c4"></i>PENDIENTE<i style="background:#eee"></i>N/A</div>')
+  p.push('<div class="leyV"><i style="background:#DCFCE7"></i>AL DIA<i style="background:#FFEDD5"></i>POR VENCER<i style="background:#FEE2E2"></i>VENCIDO<i style="background:#FEF3C7"></i>PENDIENTE<i style="background:#F1F5F9"></i>N/A</div>')
   p.push('<div style="margin-top:8px">' + _fmtFechaActual() + ' · Fila ' + row + '</div>')
   p.push('<div style="font-size:9px;color:#bbb;margin-top:2px">Sistema PADDS v3.1 · Creado por Patricio Varela C. · Interno TENS · Contacto: patriciovarelacontreras@gmail.com</div>')
   p.push('</div>')
@@ -1222,28 +1242,28 @@ function _buildFichaHtml(headers, data, lc, autor) {
   var h = '<html><head><meta charset="UTF-8"><style>' +
     '@page{size:A4;margin:9mm 7mm}' +
     'body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#212529;line-height:1.45;margin:0;padding:0}' +
-    '.bar{height:3px;background:#1F3A5F;border-bottom:1.5px solid #B9973C}' +
-    '.hdr{background:#1F3A5F;color:#fff;padding:16px 20px 12px;border-bottom:3px solid #B9973C}' +
+    '.bar{height:3px;background:#1E293B;border-bottom:1.5px solid #0F766E}' +
+    '.hdr{background:#1E293B;color:#fff;padding:16px 20px 12px;border-bottom:3px solid #0F766E}' +
     '.hdr .nom{font-size:19pt;font-weight:bold;letter-spacing:0.4px}' +
-    '.hdr .sub{font-size:8pt;color:#C7D3E0;margin-top:6px;text-transform:uppercase;letter-spacing:1px}' +
+    '.hdr .sub{font-size:8pt;color:#CBD5E1;margin-top:6px;text-transform:uppercase;letter-spacing:1px}' +
     '.hdr .sub sp{display:inline-block;margin-right:28px}' +
     '.info{background:#fbfcfe;padding:9px 20px;border-top:1px solid #e3e8ef;border-bottom:1px solid #e3e8ef;margin-bottom:12px}' +
     '.info sp{display:inline-block;margin-right:26px;font-size:9pt;color:#3a4452}' +
     '.info .lb{font-size:6.8pt;color:#8a94a6;text-transform:uppercase;letter-spacing:0.6px}' +
     '.badge{display:inline-block;padding:2px 10px;border-radius:3px;font-size:8pt;font-weight:bold;color:#fff}' +
-    '.tag-v{background:#1E7A46}.tag-f{background:#B3261E}' +
-    '.tag-e{background:#B26A00}.tag-s{background:#6D4B9E}.tag-def{background:#5F6B7A}' +
+    '.tag-v{background:#15803D}.tag-f{background:#B91C1C}' +
+    '.tag-e{background:#C2410C}.tag-s{background:#7E22CE}.tag-def{background:#475569}' +
     'table{width:100%;border-collapse:collapse;margin-bottom:12px}' +
-    '.sth{font-size:9.5pt;font-weight:bold;color:#fff;text-align:left;padding:6px 10px;letter-spacing:0.6px;text-transform:uppercase;border-bottom:2px solid #B9973C}' +
-    'td{padding:3.5px 8px;font-size:8.5pt;border:0.5px solid #dde3ea}' +
+    '.sth{font-size:9.5pt;font-weight:bold;color:#fff;text-align:left;padding:6px 10px;letter-spacing:0.6px;text-transform:uppercase;border-bottom:2px solid #0F766E}' +
+    'td{padding:3.5px 8px;font-size:8.5pt;border:0.5px solid #E2E8F0}' +
     'td.l{font-weight:bold;color:#4a5464;width:22%;background:#f4f6f8;border-left:2px solid #dfe5ec}' +
     'td.v{color:#212529;width:28%}' +
     '.vacio{color:#b0b8c4;font-size:7.5pt;font-style:italic}' +
-    '.s-v{color:#B3261E;font-weight:bold} .s-d{color:#1E7A46;font-weight:bold}' +
-    '.s-p{color:#B26A00;font-weight:bold} .s-x{color:#6D4B9E;font-weight:bold} .s-n{color:#8a94a6}' +
+    '.s-v{color:#B91C1C;font-weight:bold} .s-d{color:#15803D;font-weight:bold}' +
+    '.s-p{color:#C2410C;font-weight:bold} .s-x{color:#7E22CE;font-weight:bold} .s-n{color:#8a94a6}' +
     '.v-d,.v-pv,.v-vd,.v-pd,.v-na{display:inline-block;padding:0 5px;border-radius:2px;font-weight:700}' +
-    '.v-d{background:#e3f1e8;color:#1E7A46}.v-pv{background:#fbeed9;color:#B26A00}.v-vd{background:#f9e3e1;color:#B3261E}.v-pd{background:#f7f2d9;color:#8a6d00}.v-na{background:#eef1f5;color:#7a8494}' +
-    '.ftr{font-size:7pt;color:#8a94a6;text-align:center;padding-top:10px;border-top:1px solid #dde3ea;margin-top:8px}' +
+    '.v-d{background:#e3f1e8;color:#15803D}.v-pv{background:#fbeed9;color:#C2410C}.v-vd{background:#f9e3e1;color:#B91C1C}.v-pd{background:#f7f2d9;color:#B45309}.v-na{background:#eef1f5;color:#7a8494}' +
+    '.ftr{font-size:7pt;color:#8a94a6;text-align:center;padding-top:10px;border-top:1px solid #E2E8F0;margin-top:8px}' +
     '.wm{position:fixed;bottom:2mm;left:0;right:0;text-align:center;font-size:6.5pt;color:#d5dae2}' +
     '</style></head><body>'
 
@@ -1259,7 +1279,7 @@ function _buildFichaHtml(headers, data, lc, autor) {
     (csvP.venc > 0 ? '\u26A0 ' + csvP.venc + ' vencido(s)' : csvP.pend > 0 ? '\u26A0 ' + csvP.pend + ' pendiente(s)' : '\u2713 todo al d\u00eda') + '</span></sp></div>'
 
   h += _buildSeccionesHtml(headers, data, lc, vig, {
-    hdrCls: 'sth', hdrPad: ';padding:6px 10px', hdrBg: function() { return '#1F3A5F' },
+    hdrCls: 'sth', hdrPad: ';padding:6px 10px', hdrBg: function() { return '#1E293B' },
     lBdCol: function(si, cBg) { return cBg }, lBd: true,
     lBgFor: function(si) { return si % 2 === 0 ? '#ffffff' : '#f6f8fa' },
     skip: function(c) { return c === COL.PRIORIDAD } })
@@ -1304,7 +1324,12 @@ function ponerTooltipsPacientes() {
   for (var c = 1; c <= lc; c++) {
     var col = _COLUMNAS[c]
     if (!col) continue
+    var sec = ''
+    for (var s = 0; s < PAC_SECCIONES.length; s++) {
+      if (c >= PAC_SECCIONES[s].ini && c <= PAC_SECCIONES[s].fin) { sec = PAC_SECCIONES[s].nombre; break }
+    }
     var parts = [col.name]
+    if (sec) parts.push('Sección: ' + sec)
     if (col.desc) parts.push(col.desc)
     if (col.vals) parts.push('Valores: ' + col.vals)
     if (col.auto) parts.push(col.auto)
@@ -1424,10 +1449,18 @@ function depurarRegistrosDuplicados(skipConfirm) {
     if (resp !== ui.Button.YES) return
   }
 
-  var lc = Math.min(sh.getLastColumn(), 111)
+  var lc = Math.min(sh.getLastColumn(), 112)
   var data = sh.getRange(4, 1, lr - 3, lc).getValues()
-  var qDupMC = 0, qDupObs = 0, qEpoch = 0, qFuturo = 0
+  var qDupMC = 0, qDupObs = 0, qEpoch = 0, qFuturo = 0, qMal = 0
   var set = []
+
+  var colsFijar = [COL.CONTROLES_MISCELANEOS, COL.OTRAS_PATOLOGIAS, COL.OBSERVACIONES]
+  for (var fc3 = 0; fc3 < colsFijar.length; fc3++) {
+    if (colsFijar[fc3] <= lc) {
+      try { sh.getRange(4, colsFijar[fc3], lr - 3, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP) } catch (eW2) {}
+    }
+  }
+  if (lr >= 4) try { sh.setRowHeights(4, lr - 3, 26) } catch (eRH2) {}
 
   for (var r = 0; r < data.length; r++) {
     var rowN = r + 4
@@ -1463,6 +1496,7 @@ function depurarRegistrosDuplicados(skipConfirm) {
       if (!mal) continue
       set.push([rowN, c2 + 1, ''])
       if (mal === 'epoch') qEpoch++
+      else if (mal === 'mal') qMal++
       else qFuturo++
     }
   }
@@ -1491,7 +1525,8 @@ function depurarRegistrosDuplicados(skipConfirm) {
     '  · CONTROLES MISCELÁNEOS: ' + qDupMC + '\n' +
     '  · OTRAS PATOLOGÍAS: ' + qDupObs + '\n' +
     'Fechas vacías (31/12/1969, 31/12/1899) limpiadas: ' + qEpoch + '\n' +
-    'Fechas absurdas (año <1901 o >2100) limpiadas: ' + qFuturo + '\n\n' +
+    'Fechas absurdas (año <1901 o >2100) limpiadas: ' + qFuturo + '\n' +
+    'Fechas inexistentes (ej. 40/13/2026) limpiadas: ' + qMal + '\n\n' +
     'Ninguna línea distinta fue modificada.',
     ui.ButtonSet.OK)
 }
@@ -1513,6 +1548,8 @@ function _fechaCorrupta(v, protegerNac) {
   if (typeof v !== 'string') return false
   var s = v.trim()
   if (!/^\d{1,2}\/\d{1,2}\/\d{2,}$/.test(s)) return false
+  // Fecha con forma dd/mm/aaaa pero que no existe (ej. 40/13/2026, 30/02/2025).
+  if (!_parseDate(s)) return 'mal'
   if (!protegerNac &&
       (s === '31/12/1969' || s === '30/12/1969' || s === '31/12/1899' || s === '30/12/1899')) return 'epoch'
   var mY = s.match(/(\d{2,})\s*$/)
@@ -1593,10 +1630,12 @@ function depurarEntradasDuplicadas(skipConfirm) {
       }
     }
     if (celdas) { rng.setValues(vals); SpreadsheetApp.flush() }
+    try { rng.setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP) } catch (eW) {}
     totalCel += celdas
     totalLin += lineas
     totalSep += sep
   }
+  if (lr >= 4) try { sh.setRowHeights(4, lr - 3, 26) } catch (eRH) {}
 
   if (!totalLin && !totalSep) {
     ui.alert('Depurar entradas duplicadas', '✅ Sin hallazgos: no hay entradas repetidas ni texto continuo por separar.', ui.ButtonSet.OK)
@@ -1609,4 +1648,3 @@ function depurarEntradasDuplicadas(skipConfirm) {
     'Cada prestación quedó en su propia línea.',
     ui.ButtonSet.OK)
 }
-

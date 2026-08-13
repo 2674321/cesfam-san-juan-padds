@@ -64,9 +64,9 @@ function _ingEsIngresa(v) {
 
 function _ingColorAccion(v) {
   var s = String(v || '').trim().toUpperCase()
-  if (s === 'INGRESA' || s === 'INGRESO' || s === 'INGRESADO') return '#C8E6C9'
-  if (s === 'PENDIENTE') return '#FFF9C4'
-  if (s.indexOf('NO INGRESA') === 0) return '#FFCDD2'
+  if (s === 'INGRESA' || s === 'INGRESO' || s === 'INGRESADO') return '#DCFCE7'
+  if (s === 'PENDIENTE') return '#FEF3C7'
+  if (s.indexOf('NO INGRESA') === 0) return '#FEE2E2'
   return ''
 }
 
@@ -110,11 +110,11 @@ function _ingAplicarFormato(sh, d) {
   if (hr === 4) _ingConstruirPanel(sh, d)
 
   sh.getRange(hr, 1, 1, lcF)
-    .setBackground('#1B5E20').setFontColor('#FFFFFF').setFontWeight('bold')
-    .setFontFamily('Google Sans').setFontSize(11)
+    .setBackground(_UI.hdrBg).setFontColor('#FFFFFF').setFontWeight('bold')
+    .setFontFamily(_UI.font).setFontSize(11)
     .setHorizontalAlignment('center').setVerticalAlignment('middle')
     .setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
-    .setBorder(false, true, true, true, true, false, '#0D3B15', SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
+    .setBorder(false, true, true, true, true, false, '#1E293B', SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
   sh.setRowHeight(hr, 32)
   // Congelar un rango que corta una combinación lanza "Debes seleccionar todas
   // las celdas…": descombinar primero cualquier intervalo que cruce esta fila.
@@ -128,7 +128,7 @@ function _ingAplicarFormato(sh, d) {
 
   var bgArr = []
   for (var r = desde; r <= hasta; r++) {
-    var bg = (r - hr) % 2 === 1 ? '#FFFFFF' : '#F1F8E9'
+    var bg = (r - hr) % 2 === 1 ? _UI.zebraBg[0] : _UI.zebraBg[1]
     var rowArr = []
     for (var c2 = 0; c2 < lcF; c2++) rowArr.push(bg)
     bgArr.push(rowArr)
@@ -136,9 +136,9 @@ function _ingAplicarFormato(sh, d) {
   sh.getRange(desde, 1, total, lcF).setBackgrounds(bgArr)
 
   sh.getRange(desde, 1, total, lcF)
-    .setFontFamily('Calibri').setFontSize(10)
+    .setFontFamily(_UI.font).setFontSize(10)
     .setVerticalAlignment('middle').setFontColor('#202124')
-  sh.setRowHeights(desde, total, 22)
+  sh.setRowHeights(desde, total, _UI.rowH)
 
   if (cols.run) sh.getRange(desde, cols.run, total, 1).setHorizontalAlignment('center')
   if (cols.accion) sh.getRange(desde, cols.accion, total, 1).setHorizontalAlignment('center')
@@ -169,7 +169,7 @@ function _ingAplicarFormato(sh, d) {
   }
 
   sh.getRange(desde, 1, total, lcF)
-    .setBorder(true, true, true, true, true, true, '#D7D7D7', SpreadsheetApp.BorderStyle.SOLID)
+    .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
 
   _ingAplicarCF(sh, d, desde, total)
   _ingAplicarFiltro(sh, hr, lcF)
@@ -190,7 +190,7 @@ function _ingAplicarFormato(sh, d) {
     if (w.hasOwnProperty(cw)) sh.setColumnWidth(Number(cw), w[cw])
   }
 
-  sh.setTabColor('#7E9B88')
+  sh.setTabColor(_UI.tabBW)
 }
 
 // ─── PANEL SUPERIOR: TÍTULO + TARJETAS DE ESTADÍSTICAS EN VIVO ──────────────
@@ -199,7 +199,7 @@ var _ING_NOTA =
   'INGRESOS · LISTA DE ADMISIÓN\n\n' +
   '· OBSERVACION: INGRESA (enviar a Pacientes) · NO INGRESA · PENDIENTE\n' +
   '· ESTADO: GESTIONADOS · PENDIENTES · EN ESPERA\n' +
-  '· Al marcar INGRESA con la confirmación activada (📥 Ingresos → ⚙️ Confirmar al escribir INGRESA):\n' +
+  '· Al marcar INGRESA con la confirmación activada (📥 Ingresos → ⚙️ Confirmar "INGRESA"):\n' +
   '  se verifica el RUT (sin duplicados) y la fila se elimina de INGRESOS.\n' +
   '· Filtros: usa las flechas de la fila de encabezados.\n' +
   '· Nunca se borran hojas.'
@@ -225,7 +225,7 @@ function _ingConstruirPanel(sh, d) {
 
   var t
   try { t = sh.getRange(1, 1, 1, lcF).merge() } catch (eM) { t = sh.getRange(1, 1) }
-  t.setBackground('#2E7D5B')
+  t.setBackground(_UI.hdrBg)
     .setHorizontalAlignment('center').setVerticalAlignment('middle')
     .setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
   var txtTit = 'INGRESOS · LISTA DE ADMISIÓN\nRegistro de admisión y derivación a Pacientes · PADDS'
@@ -234,36 +234,36 @@ function _ingConstruirPanel(sh, d) {
   try {
     var rtTit = SpreadsheetApp.newRichTextValue().setText(txtTit)
       .setTextStyle(0, nlTit, SpreadsheetApp.newTextStyle().setForegroundColor('#FFFFFF')
-        .setFontSize(18).setBold(true).setFontFamily('Google Sans').build())
-      .setTextStyle(nlTit + 1, txtTit.length, SpreadsheetApp.newTextStyle().setForegroundColor('#DCEFDF')
-        .setFontSize(10).setFontFamily('Google Sans').build())
+        .setFontSize(18).setBold(true).setFontFamily(_UI.font).build())
+      .setTextStyle(nlTit + 1, txtTit.length, SpreadsheetApp.newTextStyle().setForegroundColor(_UI.hdrSub)
+        .setFontSize(10).setFontFamily(_UI.font).build())
       .build()
     t.setRichTextValue(rtTit)
     okRT = true
   } catch (eRT) {}
   if (!okRT) {
     t.setValue('INGRESOS · LISTA DE ADMISIÓN')
-      .setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(15).setFontFamily('Calibri')
+      .setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(15).setFontFamily(_UI.font)
   }
-  t.setBorder(false, false, true, false, false, false, '#1B5E20', SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
+  t.setBorder(false, false, true, false, false, false, '#1E293B', SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
   t.setNote(_ING_NOTA)
   sh.setRowHeight(1, 42)
 
   var cards = []
   if (d.cols.run) {
-    cards.push({ label: 'TOTAL SOLICITUDES', col1: 1, col2: 2, color: '#2E7D5B', tint: '#EAF4EE',
+    cards.push({ label: 'TOTAL SOLICITUDES', col1: 1, col2: 3, color: _UI.hdrBg, tint: '#EEF2F7',
       f: 'COUNTA(' + cl(d.cols.run) + rD + ':' + cl(d.cols.run) + ')' })
   }
   if (d.cols.estado) {
-    cards.push({ label: 'PENDIENTES', col1: 3, col2: 4, color: '#B7791F', tint: '#FBF3E2',
+    cards.push({ label: 'PENDIENTES', col1: 4, col2: 5, color: '#B45309', tint: '#FEF3C7',
       f: 'COUNTIF(' + cl(d.cols.estado) + rD + ':' + cl(d.cols.estado) + SEP + '"PENDIENTES")' })
-    cards.push({ label: 'EN ESPERA', col1: 5, col2: 6, color: '#2F7E9C', tint: '#E7F1F5',
+    cards.push({ label: 'EN ESPERA', col1: 6, col2: 7, color: '#0E7490', tint: '#E0F2FE',
       f: 'COUNTIF(' + cl(d.cols.estado) + rD + ':' + cl(d.cols.estado) + SEP + '"EN ESPERA")' })
-    cards.push({ label: 'GESTIONADOS', col1: 7, col2: 8, color: '#2E7D32', tint: '#E9F3EA',
+    cards.push({ label: 'GESTIONADOS', col1: 8, col2: 9, color: '#15803D', tint: '#DCFCE7',
       f: 'COUNTIF(' + cl(d.cols.estado) + rD + ':' + cl(d.cols.estado) + SEP + '"GESTIONADOS")' })
   }
   if (d.cols.accion) {
-    cards.push({ label: 'POR INGRESAR', col1: 9, col2: 11, color: '#A8432F', tint: '#FAEDE9',
+    cards.push({ label: 'POR INGRESAR', col1: 10, col2: 11, color: '#B91C1C', tint: '#FEE2E2',
       f: 'COUNTIF(' + cl(d.cols.accion) + rD + ':' + cl(d.cols.accion) + SEP + '"INGRESA")' })
   }
 
@@ -277,9 +277,9 @@ function _ingConstruirPanel(sh, d) {
       var labTxt = '● ' + ca.label
       var rtLab = SpreadsheetApp.newRichTextValue().setText(labTxt)
         .setTextStyle(0, 1, SpreadsheetApp.newTextStyle().setForegroundColor(ca.color).setBold(true)
-          .setFontSize(8).setFontFamily('Google Sans').build())
-        .setTextStyle(2, labTxt.length, SpreadsheetApp.newTextStyle().setForegroundColor('#5F6368').setBold(true)
-          .setFontSize(8).setFontFamily('Google Sans').build())
+          .setFontSize(8).setFontFamily(_UI.font).build())
+        .setTextStyle(2, labTxt.length, SpreadsheetApp.newTextStyle().setForegroundColor('#64748B').setBold(true)
+          .setFontSize(8).setFontFamily(_UI.font).build())
         .build()
       rLab.setRichTextValue(rtLab)
       rLab.setBackground(ca.tint).setHorizontalAlignment('center').setVerticalAlignment('middle')
@@ -287,7 +287,7 @@ function _ingConstruirPanel(sh, d) {
       var aNum = sh.getRange(3, ca.col1)
       try { aNum.setFormula(ca.f) } catch (eF) { aNum.setValue(0) }
       aNum.setNumberFormat('0')
-        .setFontFamily('Calibri').setFontSize(20).setFontWeight('bold')
+        .setFontFamily(_UI.font).setFontSize(20).setFontWeight('bold')
         .setFontColor(ca.color).setBackground('#FFFFFF')
         .setHorizontalAlignment('center').setVerticalAlignment('middle')
       sh.getRange(2, ca.col1, 2, nCols)
@@ -323,21 +323,21 @@ function _ingAplicarCF(sh, d, desde, total) {
     limpiar(d.cols.accion)
     var rA = sh.getRange(desde, d.cols.accion, total, 1)
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('INGRESA')
-      .setBackground('#C8E6C9').setFontColor('#1B5E20').setBold(true).setRanges([rA]).build())
+      .setBackground('#DCFCE7').setFontColor('#15803D').setBold(true).setRanges([rA]).build())
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('PENDIENTE')
-      .setBackground('#FFF9C4').setFontColor('#7A6000').setRanges([rA]).build())
+      .setBackground('#FEF3C7').setFontColor('#A16207').setRanges([rA]).build())
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextStartsWith('NO INGRESA')
-      .setBackground('#FFCDD2').setFontColor('#B71C1C').setRanges([rA]).build())
+      .setBackground('#FEE2E2').setFontColor('#B91C1C').setRanges([rA]).build())
   }
   if (d.cols.estado) {
     limpiar(d.cols.estado)
     var rE = sh.getRange(desde, d.cols.estado, total, 1)
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('GESTIONADOS')
-      .setBackground('#C8E6C9').setFontColor('#1B5E20').setRanges([rE]).build())
+      .setBackground('#DCFCE7').setFontColor('#15803D').setRanges([rE]).build())
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('PENDIENTES')
-      .setBackground('#FFF9C4').setFontColor('#7A6000').setRanges([rE]).build())
+      .setBackground('#FEF3C7').setFontColor('#A16207').setRanges([rE]).build())
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('EN ESPERA')
-      .setBackground('#BBDEFB').setFontColor('#0D47A1').setRanges([rE]).build())
+      .setBackground('#E0F2FE').setFontColor('#0369A1').setRanges([rE]).build())
   }
   sh.setConditionalFormatRules(reglas)
 }
@@ -386,10 +386,10 @@ function _ingFormatearFila(sh, row, numRows, d) {
 
   for (var i = 0; i < maxFilas; i++) {
     var r = row + i
-    var bg = (r - hr) % 2 === 1 ? '#FFFFFF' : '#F1F8E9'
+    var bg = (r - hr) % 2 === 1 ? _UI.zebraBg[0] : _UI.zebraBg[1]
     var rng = sh.getRange(r, 1, 1, lcF)
     rng.setBackground(bg)
-      .setFontFamily('Calibri').setFontSize(10)
+      .setFontFamily(_UI.font).setFontSize(10)
       .setVerticalAlignment('middle').setFontColor('#202124')
     if (cols.run) { sh.getRange(r, cols.run).setHorizontalAlignment('center'); sh.getRange(r, cols.run).setNumberFormat('@') }
     if (cols.estado) sh.getRange(r, cols.estado).setHorizontalAlignment('center')
@@ -400,7 +400,7 @@ function _ingFormatearFila(sh, row, numRows, d) {
       if (bgAcc) sh.getRange(r, cols.accion).setBackground(bgAcc)
     }
     sh.getRange(r, 1, 1, lcF)
-      .setBorder(true, true, true, true, true, true, '#D7D7D7', SpreadsheetApp.BorderStyle.SOLID)
+      .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
   }
 }
 
@@ -426,7 +426,7 @@ function _crearHojaIngresosSinConfirmar(ss) {
   // Fila 1: título · Filas 2-3: panel de estadísticas (las completa _ingConstruirPanel)
   sh.getRange(1, 1, 1, nCols).merge()
   sh.getRange(1, 1).setValue('INGRESOS · LISTA DE ADMISIÓN')
-  sh.getRange(1, 1).setBackground('#1B5E20').setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(15)
+  sh.getRange(1, 1).setBackground(_UI.hdrBg).setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(15)
     .setHorizontalAlignment('center').setVerticalAlignment('middle')
   sh.setRowHeight(1, 36)
 
@@ -438,7 +438,7 @@ function _crearHojaIngresosSinConfirmar(ss) {
   } else {
 
     sh.setFrozenRows(4)
-  sh.setTabColor('#7E9B88')
+  sh.setTabColor(_UI.tabBW)
   }
 
   ss.toast('Hoja INGRESOS creada con el nuevo diseño (panel de estadísticas, filtros y colores automáticos)', 'INGRESOS', 6)
@@ -583,6 +583,11 @@ function _ingresarDesdeLista(row) {
     return 'sin_rut'
   }
   var runN = formatearRUT(run)
+  if (!/^\d{7,8}-[0-9K]$/.test(runN) || !_validarDigitoRUT(runN)) {
+    celAccion.setNote('RUN inválido (dígito verificador incorrecto o incompleto): no se envió a Pacientes')
+    ss.toast('RUN inválido en la fila ' + row + ' (dígito verificador): no se envió a Pacientes', 'INGRESOS', 5)
+    return 'run_invalido'
+  }
 
   var filaExistente = _buscarFilaPaciente(pac, runN)
   if (filaExistente > 0) {
@@ -603,8 +608,14 @@ function _ingresarDesdeLista(row) {
     }
   }
 
+  var nCols = _COLUMNAS._count || 112
+  if (pac.getMaxColumns() < nCols) {
+    celAccion.setNote('Pacientes no tiene las ' + nCols + ' columnas esperadas: usa el menú de corrección de la hoja Pacientes')
+    ss.toast('Pacientes tiene ' + pac.getMaxColumns() + ' columnas (se esperan ' + nCols + '): no se envió a Pacientes', 'INGRESOS', 5)
+    return 'no_estructura'
+  }
+
   pac.insertRowsAfter(pac.getMaxRows(), 1)
-  var nCols = _COLUMNAS._count || 106
   var newRow = []
   for (var c = 1; c <= nCols; c++) newRow.push('')
   pac.getRange(fila, 1, 1, nCols).setValues([newRow])
@@ -632,7 +643,7 @@ function _ingresarDesdeLista(row) {
 
   var notaObs = '[INGRESO desde hoja INGRESOS] ' +
     Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy')
-  if (deriv) notaObs += ' · Derivado por: ' + deriv
+  if (deriv) notaObs += '\n  Derivado por: ' + deriv
   pac.getRange(fila, COL.OBSERVACIONES).setValue(notaObs)
 
   try { pac.getRange(fila, COL.EDITOR).setValue(Session.getActiveUser().getEmail()) } catch (e) {}
@@ -688,8 +699,23 @@ function onEditIngresos(e) {
 
   var d = _ingDetectarColumnas(sh)
   var colAcc = d && (d.cols.accion || d.cols.estado)
-  if (!d || !colAcc || row <= d.headerRow) return
-  if (e.range.getColumn() !== colAcc) return
+  if (!d || row <= d.headerRow) return
+
+  // Mayúsculas automáticas al escribir nombres/direcciones (como en Pacientes).
+  var colEdit = e.range.getColumn()
+  var upCols = {}
+  if (d.cols.nombre) upCols[d.cols.nombre] = true
+  if (d.cols.apPaterno) upCols[d.cols.apPaterno] = true
+  if (d.cols.apMaterno) upCols[d.cols.apMaterno] = true
+  if (d.cols.direccion) upCols[d.cols.direccion] = true
+  if (d.cols.derivado) upCols[d.cols.derivado] = true
+  if (upCols[colEdit]) {
+    var nuevoUp = _mayusNombre(e.value)
+    if (nuevoUp !== String(e.value).trim()) sh.getRange(row, colEdit).setValue(nuevoUp)
+    return
+  }
+
+  if (!colAcc || colEdit !== colAcc) return
   if (!_ingEsIngresa(e.value)) return
 
   if (row > sh.getLastRow()) return
@@ -781,7 +807,7 @@ function _ingReBandear(sh, d, desdeFila) {
 
   var bgArr = []
   for (var r = desdeFila; r <= lr; r++) {
-    var bg = (r - hr) % 2 === 1 ? '#FFFFFF' : '#F1F8E9'
+    var bg = (r - hr) % 2 === 1 ? _UI.zebraBg[0] : _UI.zebraBg[1]
     var rowArr = []
     for (var c = 0; c < lcF; c++) rowArr.push(bg)
     bgArr.push(rowArr)
@@ -898,4 +924,3 @@ function enviarIngresasAPacientes() {
 
   ui.alert('Resultado', msg, ui.ButtonSet.OK)
 }
-

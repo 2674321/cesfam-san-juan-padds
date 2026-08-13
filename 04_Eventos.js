@@ -7,6 +7,24 @@
 var _deleting = false
 var _processingEdit = false
 
+// El toggle multiselect escribe el valor programáticamente y el eco de esa
+// edición llega como OTRA invocación de onEdit (las variables globales NO
+// persisten entre invocaciones). Para ignorar el eco se usa CacheService:
+// _toggleMultiselect arma la clave antes del setValue y aquí se consume.
+function _esEchoMultiselect(col, row, valor) {
+  try {
+    var c = CacheService.getScriptCache()
+    if (!c) return false
+    var k = '_skip_ms_' + col + '_' + row
+    var guardado = c.get(k)
+    if (guardado !== null && String(valor || '').trim() === guardado) {
+      c.remove(k)
+      return true
+    }
+  } catch (e) {}
+  return false
+}
+
 function onSelectionChange(e) {
   if (!e) return
   var sh = e.range.getSheet()
@@ -56,12 +74,31 @@ function onEdit(e) {
         e.range.setValue(_rn)
         return
       }
+      var _notaForm = _notaRUN(_rn)
+      e.range.setNote(_notaForm)
+      var _bgForm = _FORM_SEC_TINTS[7] || '#ffffff'
+      if (row % 2 === 0) _bgForm = _ajustarHex(_bgForm, -8, -8, -8)
+      e.range.setBackground(_notaForm ? '#FEE2E2' : _bgForm)
+        .setFontColor(_notaForm ? '#B91C1C' : '#212121')
+      return
     }
 
     if (shName === 'Parámetros' && row >= 4) {
       _paramCache = null
       try { CacheService.getScriptCache().remove('_pac_params') } catch(e) {}
       return
+    }
+
+    if (shName === HOJA_PAC && row >= 4 && c1 === c2 && PAC_VALIDACIONES[c1]) {
+      if (PAC_MULTISELECT.indexOf(c1) >= 0) {
+        _pintarCeldaOpcion(sh, row, c1)
+        if (_esEchoMultiselect(c1, row, e.value)) return
+        var _tog = _toggleMultiselect(sh, row, c1, e.value)
+        _pintarCeldaOpcion(sh, row, c1)
+        if (_tog) return
+      } else {
+        _pintarCeldaOpcion(sh, row, c1)
+      }
     }
 
     // 📥 Ingresos → "Activar confirmación de INGRESA" (ver 11_Ingresos.gs).
@@ -133,7 +170,7 @@ function onEdit(e) {
       return
     }
 
-    if (shName !== HOJA) return
+    if (shName !== HOJA && !_esHojaAgenda(sh)) return
 
     var colAg = e.range.getColumn()
     var valAgenda = String(e.value || '').trim()
@@ -174,6 +211,76 @@ function onEdit(e) {
   }
 }
 
+// ─── MULTISELECCIÓN (columnas en PAC_MULTISELECT, ej. AYUDAS TECNICAS y
+// RIESGO PIE DM) ─────────────────────────────────────────────────────────────
+// Cada vez que se elige una opción del dropdown se AGREGA a la lista separada
+// por comas ("SILLA RUEDAS, CAMA"). Elegir un valor ya presente NO cambia nada
+// (nunca elimina): así ni el eco de la edición ni una re-elección borran datos.
+// N/A es excluyente: elegirlo reemplaza la lista; elegir otra opción lo quita.
+
+// Lógica pura del multiselect: calcula el nuevo valor de la celda.
+// Devuelve null si el valor no cambió (opción desconocida o ya presente).
+function _calcularMultiselect(actual, valor, lista) {
+  var nuevo = String(valor == null ? '' : valor).trim()
+  if (!nuevo || !lista || !lista.length) return null
+
+  var clave = _quitarAcentos(nuevo).replace(/\s+/g, ' ').toUpperCase()
+  var item = null
+  for (var i = 0; i < lista.length; i++) {
+    if (_quitarAcentos(String(lista[i])).replace(/\s+/g, ' ').toUpperCase() === clave) {
+      item = String(lista[i])
+      break
+    }
+  }
+  if (!item) return null
+
+  var actualTxt = String(actual == null ? '' : actual).trim()
+  var partes = actualTxt ? actualTxt.split(',').map(function(s) { return s.trim() }).filter(function(s) { return s }) : []
+  var idx = -1
+  for (var p = 0; p < partes.length; p++) {
+    if (_quitarAcentos(partes[p]).replace(/\s+/g, ' ').toUpperCase() === clave) { idx = p; break }
+  }
+
+  if (item === 'N/A') {
+    if (idx >= 0) return null
+    partes = ['N/A']
+  } else {
+    if (idx >= 0) return null
+    partes = partes.filter(function(s) { return s !== 'N/A' })
+    partes.push(item)
+  }
+
+  partes.sort(function(a, b) {
+    var ia = lista.indexOf(a), ib = lista.indexOf(b)
+    if (ia < 0) ia = lista.length
+    if (ib < 0) ib = lista.length
+    return ia - ib
+  })
+
+  var nuevoValor = partes.join(', ')
+  return nuevoValor === actualTxt ? null : nuevoValor
+}
+
+function _toggleMultiselect(sh, row, col, valor) {
+  var lista = PAC_VALIDACIONES[col]
+  if (!lista) return false
+
+  var actual = String(sh.getRange(row, col).getValue() || '').trim()
+  var nuevoValor = _calcularMultiselect(actual, valor, lista)
+  if (nuevoValor === null) return false
+
+  try {
+    CacheService.getScriptCache().put('_skip_ms_' + col + '_' + row, nuevoValor, 60)
+  } catch (eC) {}
+  try {
+    sh.getRange(row, col).setValue(nuevoValor)
+  } catch (eSet) {
+    try { CacheService.getScriptCache().remove('_skip_ms_' + col + '_' + row) } catch (eR2) {}
+    return false
+  }
+  return true
+}
+
 function _processPacientesRow(row, sh, c1, c2, lc, _params, _diasAviso, editor, _M) {
   try {
     var rowData = sh.getRange(row, 1, 1, lc).getValues()[0]
@@ -191,12 +298,15 @@ function _processPacientesRow(row, sh, c1, c2, lc, _params, _diasAviso, editor, 
           if (rFmt !== rRaw) { rowData[rc - 1] = rFmt; dirty[rc] = true }
 
           if (rFmt.indexOf('-') > 0 && rFmt.length >= 4) {
-            sh.getRange(row, rc).setNote(_validarDigitoRUT(rFmt) ? null : _NOTA_RUN_INV)
+            var _notaRun = _notaRUN(rFmt)
+            sh.getRange(row, rc).setNote(_notaRun)
+            _pintarRUT(sh, row, rc, _notaRun)
           } else {
             sh.getRange(row, rc).setNote(null)
           }
         } else {
           sh.getRange(row, rc).setNote(null)
+          _pintarRUT(sh, row, rc, null)
         }
       }
     }
@@ -317,6 +427,11 @@ function _processPacientesRow(row, sh, c1, c2, lc, _params, _diasAviso, editor, 
         console.error('onEdit colorearFechasFila: ' + eCol.message)
       }
     }
+    if (_soloCols.length) {
+      try { _pintarFechasInvalidas(sh, row, lc, row) } catch (ePI) {
+        console.error('onEdit fechas inválidas: ' + ePI.message)
+      }
+    }
     if (_tocaControl || (c1 <= COL.VITAL && c2 >= COL.VITAL)) {
       try { _recalcularPrioridad(row, sh, lc, _params, _diasAviso, rowData, _M && _M.c) } catch (ePrio) {
         console.error('onEdit recalcularPrioridad: ' + ePrio.message)
@@ -330,4 +445,3 @@ function _processPacientesRow(row, sh, c1, c2, lc, _params, _diasAviso, editor, 
     console.error('onEdit Pacientes error: ' + e.message)
   }
 }
-
