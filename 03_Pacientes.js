@@ -309,12 +309,7 @@ function agregarPaciente() {
   } catch(eN) {}
 
   try {
-    for (var _pc = 0; _pc < lc; _pc++) {
-      var _pcN = _pc + 1
-      if (_pcN === COL.SECTOR || _pcN === COL.VITAL) continue
-      if (_CHECKBOX_COLS.indexOf(_pcN) >= 0) continue
-      if (PAC_VALIDACIONES[_pcN]) _pintarCeldaOpcion(sh, nr, _pcN)
-    }
+    _pintarOpcionesFila(sh, nr, lc)
     _pintarRUT(sh, nr, COL.RUN, '')
     _pintarRUT(sh, nr, COL.RUN_CUIDADOR, '')
   } catch(ePc) {}

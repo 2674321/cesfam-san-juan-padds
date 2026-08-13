@@ -83,9 +83,12 @@ function verificarBackup() {
   if (Date.now() - st.ultimo >= st.dias * 86400000) {
     try {
       var ss = SpreadsheetApp.openById(st.ssId)
-      _ejecutarBackup(ss, false)
+      var resVB = _ejecutarBackup(ss, false)
+      _log(ss, 'Backup', 'verificarBackup', 'ok',
+        resVB ? resVB.nombre + ' · copias: ' + resVB.total : 'sin copia')
     } catch (e) {
       console.error('verificarBackup: ' + e.message)
+      try { _log(null, 'Backup', 'verificarBackup', 'ERROR', e.message) } catch (eLogB) {}
     }
   }
 }

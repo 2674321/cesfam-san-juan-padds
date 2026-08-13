@@ -641,6 +641,32 @@ function _pintarOpciones(sh, lr, lc) {
   }
 }
 
+// Versión por lote de _pintarCeldaOpcion para UNA fila completa (usada al crear
+// un paciente nuevo, evita ~100 llamadas por fila). Lee los estilos actuales
+// una sola vez y reescribe solo las celdas de dropdown que cambian.
+function _pintarOpcionesFila(sh, row, lc) {
+  if (row < 4 || lc < 1) return
+  var rng = sh.getRange(row, 1, 1, lc)
+  var vals = rng.getValues()[0]
+  var bgs = rng.getBackgrounds()[0]
+  var fgs = rng.getFontColors()[0]
+  var wts = rng.getFontWeights()[0]
+  var zebra = _UI.zebraBg[row % 2]
+  for (var _pof = 0; _pof < lc; _pof++) {
+    var col = _pof + 1
+    if (_CHECKBOX_COLS.indexOf(col) >= 0) continue
+    if (col === COL.SECTOR || col === COL.VITAL) continue
+    var vO = String(vals[_pof] == null ? '' : vals[_pof]).trim()
+    if (!vO) { bgs[_pof] = zebra; wts[_pof] = 'normal'; continue }
+    var cc2 = _colorCeldaOpcion(vO, col)
+    if (!cc2) continue
+    bgs[_pof] = cc2.bg
+    fgs[_pof] = cc2.fg
+    wts[_pof] = (PAC_MULTISELECT.indexOf(col) >= 0 && vO.indexOf(',') >= 0) ? 'bold' : 'normal'
+  }
+  rng.setBackgrounds([bgs]).setFontColors([fgs]).setFontWeights([wts])
+}
+
 // ─── DETECTOR DE FECHAS MAL ESCRITAS / FUTURAS ───────────────────────────────
 
 // Marca celdas de columnas de fecha con texto que no es fecha (ej. "PENDIENTE",
