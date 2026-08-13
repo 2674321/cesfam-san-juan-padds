@@ -61,7 +61,12 @@ function onEdit(e) {
     var numRows = e.range.getNumRows()
 
     if (shName === HOJA_FORM && c1 === 3 && row >= 6) {
-      var val = String(e.value || '').trim()
+      var valRaw = String(e.value || '').trim()
+      var val = _normEstadoForm(valRaw)
+      if (val !== valRaw && val) {
+        sh.getRange(row, 3).setValue(val)
+        e.value = val
+      }
       if (_ESTADO_CSS[val]) {
         _colorEstado(sh, row, val, sh.getLastColumn())
       }

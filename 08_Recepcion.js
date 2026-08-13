@@ -21,6 +21,23 @@ var _ESTADO_CSS = {
   'Rechazado': { badge: '#B91C1C', tint: '#FEE2E2', fg: '#FFFFFF' },
 }
 
+// Normaliza el valor de ESTADO (columna C) de la hoja de recepción: tolera
+// minúsculas, mayúsculas, espacios y estados legados ("Aprobado"). Devuelve el
+// canónico ('Pendiente' | 'Gestionado' | 'Rechazado') o el texto original
+// recortado si no es ninguno de ellos. Sin esto, escribir el estado a mano
+// (p. ej. "gestionado") hacía que Aprobar/Rechazar/Limpiar no detectaran la fila.
+function _normEstadoForm(v) {
+  var s = String(v == null ? '' : v).trim()
+  if (!s) return s
+  var up = s.toUpperCase()
+    .replace(/[ÁÀÄÂ]/g, 'A').replace(/[ÉÈËÊ]/g, 'E').replace(/[ÍÌÏÎ]/g, 'I')
+    .replace(/[ÓÒÖÔ]/g, 'O').replace(/[ÚÙÜÛ]/g, 'U')
+  if (up.indexOf('GESTIONAD') === 0 || up.indexOf('APROB') === 0) return 'Gestionado'
+  if (up.indexOf('RECHAZAD') === 0) return 'Rechazado'
+  if (up.indexOf('PEND') === 0) return 'Pendiente'
+  return s
+}
+
 var _FORM_SEC_TINTS = {
   1:'#F1F5F9', 2:'#E2E8F0', 3:'#F1F5F9', 4:'#E2E8F0', 5:'#F1F5F9',
   6:'#E0F2FE', 7:'#F0FDFA', 8:'#E0F2FE', 9:'#F0FDFA',
@@ -142,7 +159,7 @@ function _obtenerEstadisticas() {
   var data = sh.getRange(5, 1, lr - 4, 3).getValues()
   var stats = { total: 0, pend: 0, aprob: 0, rech: 0 }
   for (var r = 0; r < data.length; r++) {
-    var est = String(data[r][2] || '').trim()
+    var est = _normEstadoForm(data[r][2])
     if (!est) continue
     stats.total++
     if (est === 'Pendiente') stats.pend++
@@ -514,20 +531,29 @@ function aprobarFormularios() {
 
     var rechRows = []
 
+    var avisosAp = []
+
     for (var r = data.length - 1; r >= 0; r--) {
       var rowNum = r + 5
-      var estado = String(data[r][2] || '').trim()
+      var estRaw = String(data[r][2] || '').trim()
+      var estado = _normEstadoForm(estRaw)
+      if (estado !== estRaw) {
+        sh.getRange(rowNum, 3).setValue(estado)
+        data[r][2] = estado
+      }
       if (estado === 'Rechazado') {
         rechRows.push(rowNum)
       } else if (estado === 'Gestionado') {
         if (!data[r][6] || String(data[r][6]).trim() === '') {
           sh.getRange(rowNum, 7).setNote('⚠️ Falta el RUN: complétalo y vuelve a aprobar')
           sh.getRange(rowNum, 7).setBackground('#FEF3C7').setFontColor('#A16207').setFontWeight('bold')
+          avisosAp.push('Fila ' + rowNum + ': falta el RUN (col. G).')
           continue
         }
         if (!data[r][7] || String(data[r][7]).trim() === '') {
           sh.getRange(rowNum, 8).setNote('⚠️ Falta el nombre: complétalo y vuelve a aprobar')
           sh.getRange(rowNum, 8).setBackground('#FEF3C7').setFontColor('#A16207').setFontWeight('bold')
+          avisosAp.push('Fila ' + rowNum + ': falta el NOMBRE (col. H).')
           continue
         }
         var rutNorm = _normRUN(data[r][6])
@@ -535,6 +561,7 @@ function aprobarFormularios() {
         if (!rutOK) {
           sh.getRange(rowNum, 7).setNote('⚠️ RUN inválido (formato 12345678-5 con dígito verificador correcto). Corrígelo y vuelve a aprobar.')
           sh.getRange(rowNum, 7).setBackground('#FEE2E2').setFontColor('#B91C1C').setFontWeight('bold')
+          avisosAp.push('Fila ' + rowNum + ': RUN inválido (formato 12345678-5 con DV correcto).')
           continue
         }
         aprobRows.push({ row: rowNum, data: data[r] })
@@ -566,6 +593,12 @@ function aprobarFormularios() {
     if (transferidos.length) msg.push(transferidos.length + ' transferidos a Pacientes')
     if (rechRows.length) msg.push(rechRows.length + ' rechazados eliminados')
     ss.toast(msg.length ? msg.join(', ') : 'No hay Gestionados ni Rechazados para procesar. Pendientes se saltan.', 'PADDS', 4)
+    if (avisosAp.length) {
+      SpreadsheetApp.getUi().alert('Formularios con datos incompletos',
+        'Estas filas están marcadas como Gestionado pero faltan datos o son inválidos, por lo que NO se enviaron a Pacientes:\n\n' +
+        avisosAp.join('\n') + '\n\nCorrige los datos y vuelve a aprobar.',
+        SpreadsheetApp.getUi().ButtonSet.OK)
+    }
     _miniResumenForm(sh)
   } finally {
     lock.releaseLock()
@@ -767,7 +800,7 @@ function rechazarFormularios() {
 
     var rechRows = []
     for (var r = 0; r < data.length; r++) {
-      if (String(data[r][2] || '').trim() !== 'Pendiente') continue
+      if (_normEstadoForm(data[r][2]) !== 'Pendiente') continue
       rechRows.push(r + 5)
     }
 
@@ -808,7 +841,8 @@ function limpiarFormulariosAprobados() {
   var aLimpiar = 0
 
   for (var r = data.length - 1; r >= 0; r--) {
-    if (String(data[r][2] || '').trim() === 'Gestionado' || String(data[r][2] || '').trim() === 'Rechazado') {
+    var estLim = _normEstadoForm(data[r][2])
+    if (estLim === 'Gestionado' || estLim === 'Rechazado') {
       aLimpiar++
     }
   }
@@ -818,7 +852,8 @@ function limpiarFormulariosAprobados() {
 
   var grupos = [], start = -1
   for (var r = data.length - 1; r >= 0; r--) {
-    if (String(data[r][2] || '').trim() === 'Gestionado' || String(data[r][2] || '').trim() === 'Rechazado') {
+    var estGr = _normEstadoForm(data[r][2])
+    if (estGr === 'Gestionado' || estGr === 'Rechazado') {
       if (start < 0) { start = r + 5; grupos.push([start, 1]) }
       else { grupos[grupos.length - 1][1]++ }
     } else { start = -1 }
