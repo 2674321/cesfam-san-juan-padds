@@ -597,6 +597,7 @@ function _ingresarDesdeLista(row) {
   }
 
   // 2) Crear paciente nuevo (agregar fila al final de Pacientes, nunca borrar)
+  try { _borrarFilasVacias(pac, 4) } catch (eC) {}
   var lr = pac.getLastRow()
   var fila = lr + 1
   var id = 1
@@ -615,7 +616,9 @@ function _ingresarDesdeLista(row) {
     return 'no_estructura'
   }
 
-  pac.insertRowsAfter(pac.getMaxRows(), 1)
+  if (fila > pac.getMaxRows()) {
+    pac.insertRowsAfter(pac.getMaxRows(), fila - pac.getMaxRows())
+  }
   var newRow = []
   for (var c = 1; c <= nCols; c++) newRow.push('')
   pac.getRange(fila, 1, 1, nCols).setValues([newRow])

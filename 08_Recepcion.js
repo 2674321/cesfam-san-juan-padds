@@ -59,10 +59,7 @@ function _estiloFila(sh, row, lc) {
     .setFontFamily(_UI.font).setFontSize(10).setFontColor('#212121')
     .setVerticalAlignment('middle')
     .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
-  var bgs = []
-  for (var c = 1; c <= lc; c++)
-    bgs.push(even ? _ajustarHex(_FORM_SEC_TINTS[c] || '#ffffff', -8, -8, -8) : (_FORM_SEC_TINTS[c] || '#ffffff'))
-  rng.setBackgrounds([bgs])
+  rng.setBackground(even ? '#FFFFFF' : '#F8FAFC')
   for (var c = 1; c <= lc; c++)
     sh.getRange(row, c).setHorizontalAlignment(_ALIGN[c] || 'center')
   sh.setRowHeight(row, 26)
@@ -247,23 +244,11 @@ function crearFormularioBase() {
   sh.setFrozenColumns(0)
   sh.setFrozenRows(0)
 
-  var lc = 19, WHITE = '#ffffff', NAVY = _UI.hdrBg, BLUE = _UI.accent
-  var LIGHT_BLUE = '#E0F2FE', WARN = '#FEF3C7', BORDER = _UI.accentL
+  var lc = 19, WHITE = '#ffffff'
   var SEC_COLORS = ['#475569', '#0F766E', '#C2410C', '#334155']
   var SEC_TINTS = ['#EEF1F5', '#E0F2FE', '#FFEDD5', '#E4E9EB']
   var BS = SpreadsheetApp.BorderStyle.SOLID
   var BS_MED = SpreadsheetApp.BorderStyle.SOLID_MEDIUM
-
-  sh.setRowHeight(1, 44)
-  try { sh.getRange(1, 1, 4, Math.max(lc, 20)).breakApart() } catch (eB) {}
-  var tTit
-  try { tTit = sh.getRange(1, 1, 1, lc).merge() } catch (eM) { tTit = sh.getRange(1, 1) }
-  tTit
-    .setValue('REGISTRO DE SOLICITUDES · PADDS')
-    .setFontFamily(_UI.font).setFontSize(20).setFontWeight('bold')
-    .setFontColor(WHITE).setBackground(NAVY)
-    .setHorizontalAlignment('left').setVerticalAlignment('middle')
-    .setBorder(true, true, true, true, false, false, WHITE, BS_MED)
 
   var FORM_TOOLTIPS = [
     'Fecha y hora de recepción del formulario (se llena automáticamente).',
