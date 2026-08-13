@@ -617,12 +617,7 @@ function limpiarFilasVaciasPacientes() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
   if (!sh) { ss.toast('No se encontró la hoja Pacientes', 'Pacientes', 4); return }
-  var total = 0
-  for (var ronda = 0; ronda < 5; ronda++) {
-    var n = _borrarFilasVacias(sh, 4)
-    total += n
-    if (n === 0) break
-  }
+  var total = _limpiarFilasVaciasLoop(sh, 4)
   ss.toast(total > 0
     ? 'Se eliminaron ' + total + ' fila(s) vacía(s) de Pacientes'
     : 'Pacientes está limpio: no había filas vacías al final', 'Pacientes', 4)
