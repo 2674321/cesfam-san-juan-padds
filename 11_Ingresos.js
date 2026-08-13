@@ -689,6 +689,15 @@ function configurarTriggerIngresos() {
 }
 
 function onEditIngresos(e) {
+  try {
+    _onEditIngresosImpl(e)
+  } catch (errIE) {
+    console.error('onEditIngresos: ' + errIE.message)
+    _log(e && e.source, 'Ingresos', 'onEditIngresos', 'ERROR', errIE.message)
+  }
+}
+
+function _onEditIngresosImpl(e) {
   if (!e) return
   var sh = e.range.getSheet()
   if (sh.getName() !== 'Ingresos') return
@@ -816,10 +825,12 @@ function _ingReBandear(sh, d, desdeFila) {
 
   if (d.cols.accion) {
     var vals = sh.getRange(desdeFila, d.cols.accion, lr - desdeFila + 1, 1).getValues()
+    var bgsAcc = sh.getRange(desdeFila, d.cols.accion, lr - desdeFila + 1, 1).getBackgrounds()
     for (var i = 0; i < vals.length; i++) {
       var bgA = _ingColorAccion(vals[i][0])
-      if (bgA) sh.getRange(desdeFila + i, d.cols.accion).setBackground(bgA)
+      if (bgA) bgsAcc[i][0] = bgA
     }
+    sh.getRange(desdeFila, d.cols.accion, lr - desdeFila + 1, 1).setBackgrounds(bgsAcc)
   }
 }
 

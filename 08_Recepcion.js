@@ -484,8 +484,10 @@ function onFormSubmit(e) {
       stagingSh.getRange(nr, 7).setBackground('#FEE2E2').setFontColor('#B91C1C').setFontWeight('bold')
       stagingSh.getRange(nr, 7).setNote('⚠️ RUN inválido: revisa el dígito verificador (formato 12345678-5)')
     }
+    _log(ss, 'Recepción', 'onFormSubmit', 'ok', 'fila ' + nr)
   } catch(err) {
     console.log('onFormSubmit: ' + err.message)
+    try { _log(ss, 'Recepción', 'onFormSubmit', 'ERROR', err.message) } catch (eLogF) {}
   }
 }
 

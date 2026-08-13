@@ -480,3 +480,34 @@ function _agruparContiguos(cols) {
   }
   return groups
 }
+
+// ─── LOG EN HOJA 'Log' (trazabilidad sin abrir el editor — AGENTS.md §3) ──────
+// Registra (timestamp, módulo, evento, resultado, detalle) por lote con lock.
+// La pestaña 'Log' se crea sola la primera vez y se recorta al crecer.
+// Nunca lanza errores: el logging jamás debe romper el flujo principal.
+
+var _LOG_MAX_FILAS = 2000
+
+function _log(ss, pagina, evento, resultado, detalle) {
+  try {
+    if (!ss) ss = SpreadsheetApp.getActiveSpreadsheet()
+    if (!ss) return
+    var sh = ss.getSheetByName('Log')
+    if (!sh) {
+      sh = ss.insertSheet('Log')
+      sh.setFrozenRows(1)
+      sh.getRange(1, 1, 1, 5).setValues([['FECHA', 'MODULO', 'EVENTO', 'RESULTADO', 'DETALLE']])
+      sh.setColumnWidths(1, 5, 110)
+    }
+    var lock = LockService.getScriptLock()
+    if (!lock.tryLock(3000)) { console.warn('_log: sin lock, se omite el registro'); return }
+    var ts = ''
+    try { ts = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'dd/MM/yyyy HH:mm:ss') } catch (eT) { ts = String(new Date()) }
+    sh.appendRow([ts, String(pagina || ''), String(evento || ''), String(resultado || ''), String(detalle || '')])
+    var sobra = sh.getLastRow() - _LOG_MAX_FILAS
+    if (sobra > 1) sh.deleteRows(2, sobra)
+    lock.releaseLock()
+  } catch (eLog) {
+    console.error('_log: ' + eLog.message)
+  }
+}
