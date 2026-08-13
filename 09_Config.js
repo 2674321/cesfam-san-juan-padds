@@ -40,6 +40,8 @@ function onOpen() {
       .addItem('🎨 Formatear hoja', 'formatearDatos')
       .addItem('🛡️ Reparar formato', 'repararFormatoPacientes')
       .addSeparator()
+      .addItem('🧹 Limpiar filas vacías', 'limpiarFilasVaciasPacientes')
+      .addSeparator()
       .addItem('➖ Eliminar paciente', 'eliminarPaciente'))
     .addSubMenu(ui.createMenu('🔄 Vigencias')
       .addItem('🔄 Recalcular', 'recalcularTodo')

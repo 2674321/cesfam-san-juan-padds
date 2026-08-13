@@ -754,10 +754,13 @@ function _batchCopiarFormularios(formRows) {
     hechos.push(formRows[r].row)
   }
 
+  var nr = 0, insertadas = 0
   if (newRows.length > 0) {
-    var nr = lr + 1
+    nr = lr + 1
+    insertadas = 0
     if (nr + newRows.length - 1 > pac.getMaxRows()) {
-      pac.insertRowsAfter(pac.getMaxRows(), nr + newRows.length - pac.getMaxRows())
+      insertadas = nr + newRows.length - pac.getMaxRows()
+      pac.insertRowsAfter(pac.getMaxRows(), insertadas)
     }
     pac.getRange(nr, 1, newRows.length, lc).setValues(newRows)
     var rng = pac.getRange(nr, 1, newRows.length, lc)
@@ -769,7 +772,12 @@ function _batchCopiarFormularios(formRows) {
     pac.setRowHeights(nr, newRows.length, 26)
   }
 
-  try { _borrarFilasVacias(pac, 4) } catch (eV) {}
+  try {
+    var _nPre2 = _borrarFilasVacias(pac, 4)
+    _log(ss, 'Pacientes', '_batchCopiarFormularios', 'ok',
+      'nr=' + nr + ' lr=' + lr + ' nuevos=' + newRows.length + ' insertadas=' + insertadas +
+      ' maxRows=' + pac.getMaxRows() + ' vaciasEliminadas=' + _nPre2)
+  } catch (eV2) {}
 
   ss.toast(updated + ' pacientes actualizados, ' + newRows.length + ' pacientes creados desde formularios', 'PADDS', 4)
   return hechos
