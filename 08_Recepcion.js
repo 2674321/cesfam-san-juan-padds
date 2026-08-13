@@ -312,31 +312,36 @@ function crearFormularioBase() {
   var estados = ['Rechazado', 'Gestionado', 'Pendiente']
   for (var ei = 0; ei < estados.length; ei++) {
     var css = _ESTADO_CSS[estados[ei]]
-    rules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenTextEqualTo(estados[ei])
-      .setBackground(css.badge).setFontColor(css.fg).setBold(true)
-      .setRanges([statusCol]).build())
+rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo(estados[ei])
+    .setBackground(css.badge).setFontColor(css.fg).setBold(true)
+    .setRanges([statusCol]).build())
   }
-  // Reglas para filas completas según ESTADO: tinte de fondo + lectura rápida
-  var dataRng = sh.getRange(5, 1, maxRows - 4, lc)
-  rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=$C5="Pendiente"')
-    .setBackground('#FFEDD5')
-    .setRanges([dataRng]).build())
-  rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=$C5="Gestionado"')
-    .setBackground('#DCFCE7').setFontColor('#888888')
-    .setRanges([dataRng]).build())
-  rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=$C5="Rechazado"')
-    .setBackground('#F8FAFC').setFontColor('#aaaaaa').setStrikethrough(true)
-    .setRanges([dataRng]).build())
+  // El ESTADO se muestra solo como badge en la columna C (reglas de arriba):
+  // pintar filas completas (naranja/verde/gris) chocaba con el formato de filas
+  // y dejaba la hoja "toda naranja". Las filas de datos llevan cebra uniforme.
 
   rules.push(SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=AND($G5<>"",COUNTIF($G$5:$G,$G5)>1)')
     .setBackground('#FEF3C7').setFontColor('#C2410C').setBold(true)
     .setRanges([sh.getRange(5, 7, maxRows - 4, 1)]).build())
   sh.setConditionalFormatRules(rules)
+
+  // Formato uniforme para las filas de datos existentes (cebra): reemplaza los
+  // tintes por sección pintados por versiones antiguas, que se veían mezclados
+  // con el formato actual. El color de estado ahora solo vive en la columna C.
+  var _lrD = sh.getLastRow()
+  if (_lrD >= 5) {
+    var _nD = _lrD - 4
+    var _rowsBg = []
+    for (var _d = 0; _d < _nD; _d++) {
+      var _one = []
+      var _bCebra = (_d % 2 === 0) ? '#FFFFFF' : '#F8FAFC'
+      for (var _cX = 0; _cX < lc; _cX++) _one.push(_bCebra)
+      _rowsBg.push(_one)
+    }
+    sh.getRange(5, 1, _nD, lc).setBackgrounds(_rowsBg)
+  }
 
   var hasta = existe ? Math.min(lrForm, 500) : 25
   for (var fr = 5; fr <= Math.max(hasta, 25); fr++) _estiloFila(sh, fr, lc)
@@ -596,6 +601,7 @@ function _batchCopiarFormularios(formRows) {
   var pac = ss.getSheetByName(HOJA_PAC)
   if (!pac) return []
 
+  try { _borrarFilasVacias(pac, 4) } catch (eB) {}
   var lr = pac.getLastRow()
   var lc = pac.getLastColumn()
 
