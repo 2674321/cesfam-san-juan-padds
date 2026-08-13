@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════
-// 06_Formato.gs │ formato/validaciones/colores/dashboard/parametros (111 cols 'Pacientes')
+// 06_Formato.gs │ formato/validaciones/colores/dashboard/parametros (112 cols 'Pacientes')
 
 // ─────────────────────────────────────────────────────────
 // ─── FORMATO: VALIDACIONES, FORMATO CONDICIONAL, HOJAS DE SISTEMA ───────────
@@ -23,10 +23,29 @@ function _agregarColumnasFaltantes(ss, sh, targetCols) {
   return targetCols
 }
 
+function agregarColumnaInsulinoDependiente() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  var sh = ss.getSheetByName(HOJA_PAC)
+  if (!sh) { ss.toast('No existe la hoja ' + HOJA_PAC, 'PADDS', 3); return }
+  var migro = false
+  try { migro = _asegurarColumnaInsulino(sh) } catch(e) {}
+  if (migro) {
+    _formatearDatosSinConfirmar(sh, ss)
+    try { crearDashboard() } catch(eD) {}
+    ss.toast('Columna INSULINO DEPENDIENTE agregada y hoja formateada', 'PADDS', 4)
+  } else {
+    ss.toast('La columna INSULINO DEPENDIENTE ya existe', 'PADDS', 3)
+  }
+}
+
 function _repintarSinConfirmar(sh, ss) {
   ss.toast('Preparando reconstrucción funcional…', 'PADDS', 1)
 
-  var targetCols = _COLUMNAS._count || 111
+  var _migroIns = false
+  try { _migroIns = _asegurarColumnaInsulino(sh) } catch(eM) {}
+  if (_migroIns) ss.toast('Columna INSULINO DEPENDIENTE agregada…', 'PADDS', 2)
+
+  var targetCols = _COLUMNAS._count || 112
   var currentCols = _agregarColumnasFaltantes(ss, sh, targetCols)
 
   var data = sh.getDataRange().getValues()
@@ -54,13 +73,14 @@ function _repintarSinConfirmar(sh, ss) {
   ponerTooltipsPacientes()
   _refrescarFormatoCondicional(sh, rows, currentCols)
   try { recalcularTodo() } catch(e) {}
+  if (_migroIns) { try { crearDashboard() } catch(eD) {} }
 }
 
 function _restaurarVisualSinConfirmar(sh, ss) {
   var lr = sh.getLastRow()
   var lc = sh.getLastColumn()
   if (lr < 3) {   ss.toast(HOJA_PAC + ' sin datos para formatear', 'Pacientes', 4); return }
-  var targetCols = _COLUMNAS._count || 111
+  var targetCols = _COLUMNAS._count || 112
   _agregarColumnasFaltantes(ss, sh, targetCols)
   lc = sh.getLastColumn()
   _aplicarFormatoVisual(sh, lr, lc)
@@ -91,7 +111,7 @@ function _formatearDatosSinConfirmar(sh, ss) {
   ss.toast('Formateando datos y diseño…', 'PADDS', 1)
 
   var eliminadas = 0
-  try { eliminadas = _eliminarFilasVacias(sh) } catch(eV) {}
+  try { eliminadas = _borrarFilasVacias(sh, 4) } catch(eV) {}
   if (eliminadas) ss.toast(eliminadas + ' filas vacías eliminadas. Formateando…', 'PADDS', 2)
 
   var errores = []
@@ -105,6 +125,15 @@ function _formatearDatosSinConfirmar(sh, ss) {
 
   try { _restaurarVisualSinConfirmar(sh, ss) }
   catch(eE2) { errores.push('Diseño visual: ' + eE2.message) }
+
+  try { _pintarOpciones(sh, sh.getLastRow(), sh.getLastColumn()) }
+  catch(eP) { errores.push('Colores de opciones: ' + eP.message) }
+
+  try { _pintarFechasInvalidas(sh, sh.getLastRow(), sh.getLastColumn()) }
+  catch(ePI) { errores.push('Fechas inválidas: ' + ePI.message) }
+
+  try { formatearRUTPacientes(true) }
+  catch(eR) { errores.push('RUN: ' + eR.message) }
 
   var ui = SpreadsheetApp.getUi()
   if (errores.length) {
@@ -167,7 +196,7 @@ function repararFormatoPacientes() {
 function _eliminarFilasConCabecera(sh) {
   var lr = sh.getLastRow()
   if (lr < 5) return 0
-  var lc = Math.min(sh.getLastColumn(), _COLUMNAS._count || 111)
+  var lc = Math.min(sh.getLastColumn(), _COLUMNAS._count || 112)
   var data = sh.getRange(4, 1, lr - 3, lc).getValues()
   var aEliminar = []
   for (var r = 0; r < data.length; r++) {
@@ -179,38 +208,6 @@ function _eliminarFilasConCabecera(sh) {
   if (!aEliminar.length) return 0
   for (var i = aEliminar.length - 1; i >= 0; i--) sh.deleteRows(4 + aEliminar[i])
   return aEliminar.length
-}
-
-function _eliminarFilasVacias(sh) {
-  var lr = sh.getLastRow()
-  var lc = sh.getLastColumn()
-  if (lr < 4 || lc < 1) return 0
-  var data = sh.getRange(4, 1, lr - 3, lc).getValues()
-  var vacias = []
-  for (var r = 0; r < data.length; r++) {
-    var vacia = true
-    for (var c = 0; c < data[r].length; c++) {
-      var v = data[r][c]
-      if (v !== '' && v !== null && v !== undefined && String(v).trim() !== '') {
-        vacia = false
-        break
-      }
-    }
-    if (vacia) vacias.push(r)
-  }
-  if (!vacias.length) return 0
-
-  var grupos = [], cur = [vacias[0]]
-  for (var i = 1; i < vacias.length; i++) {
-    if (vacias[i] === vacias[i - 1] + 1) cur.push(vacias[i])
-    else { grupos.push(cur); cur = [vacias[i]] }
-  }
-  grupos.push(cur)
-  for (var g = grupos.length - 1; g >= 0; g--) {
-    var grp = grupos[g]
-    sh.deleteRows(4 + grp[0], grp.length)
-  }
-  return vacias.length
 }
 
 function aplicarFormatoFuncional(sh, lr, lc) {
@@ -260,8 +257,8 @@ function aplicarFormatoFuncional(sh, lr, lc) {
     sh.getRange(4, 10, dataRows, 1).setHorizontalAlignment('center')
     if (19 <= lc) sh.getRange(4, 19, dataRows, 1).setHorizontalAlignment('center')
 
-    var _centro = [2, 6, 7, 17, 22, 26, 27, 28, 49, 55, 58, 65, 67, 72, 73, 74,
-      78, 92, 93, 94, 96, 98, 100, 104, 105, 106, 107, 108, 109]
+    var _centro = [2, 6, 7, 17, 22, 26, 27, 28, 49, 59, 66, 68, 71, 72, 73, 74, 75,
+      79, 81, 82, 83, 84, 93, 94, 95, 97, 99, 101, 105, 106, 107, 108, 109, 110]
     for (var _cc = 0; _cc < _centro.length; _cc++) {
       if (_centro[_cc] <= lc) sh.getRange(4, _centro[_cc], dataRows, 1).setHorizontalAlignment('center')
     }
@@ -280,7 +277,7 @@ function aplicarFormatoFuncional(sh, lr, lc) {
 
   if (lr >= 4) {
 
-    var _vacDef = typeof _VACUNA_COLS !== 'undefined' ? _VACUNA_COLS : [80, 81, 82, 83]
+    var _vacDef = typeof _VACUNA_COLS !== 'undefined' ? _VACUNA_COLS : [81, 82, 83, 84]
     var _vacVals = typeof _VACUNA_VALS !== 'undefined' ? _VACUNA_VALS : ['SI', 'NO', 'N/A', 'R', 'P']
     var dateVal = SpreadsheetApp.newDataValidation().requireDate().setAllowInvalid(true).build()
     for (var fi = 0; fi < _FECHAS_VA.length; fi++) {
@@ -288,7 +285,7 @@ function aplicarFormatoFuncional(sh, lr, lc) {
       if (fc2 <= lc && _vacDef.indexOf(fc2) < 0) sh.getRange(4, fc2, lr - 3, 1).setDataValidation(dateVal)
     }
 
-    var libres = [20, 48, 50, 62, 75, 98, 100]
+    var libres = typeof PAC_LIBRES !== 'undefined' ? PAC_LIBRES : [20, 48, 50, 63, 76, 98, 100, 105, 106, 107, 108, 109, 111]
     for (var li = 0; li < libres.length; li++) {
       if (libres[li] <= lc) sh.getRange(4, libres[li], lr - 3, 1).setDataValidation(null)
     }
@@ -297,11 +294,8 @@ function aplicarFormatoFuncional(sh, lr, lc) {
       var _vacC = _vacDef[_vai]
       if (_vacC <= lc) {
         sh.getRange(4, _vacC, lr - 3, 1)
-          .setDataValidation(SpreadsheetApp.newDataValidation()
-            .requireValueInList(_vacVals, true).setAllowInvalid(true).build())
           .setNumberFormat('@')
           .setHorizontalAlignment('center')
-          .setBackground('#ffffff').setFontColor('#1a1a1a').setFontWeight('normal')
       }
     }
   }
@@ -315,9 +309,9 @@ function _aplicarFormatoVisual(sh, lr, lc) {
   for (var i = 0; i < Math.min(PAC_ANCHOS.length, lc); i++)
     sh.setColumnWidth(i + 1, PAC_ANCHOS[i])
 
-  sh.setRowHeight(1, 34)
+  sh.setRowHeight(1, 38)
   sh.getRange(1, 1, 1, lc)
-    .setFontFamily('Arial').setFontSize(11).setFontWeight('bold')
+    .setFontFamily('Arial').setFontSize(12).setFontWeight('bold')
     .setVerticalAlignment('middle').setHorizontalAlignment('center')
 
   var _frozenLegacy = sh.getFrozenColumns()
@@ -338,10 +332,12 @@ function _aplicarFormatoVisual(sh, lr, lc) {
       try { part1.merge() } catch(eM1) {}
       part1.setBackground(sec.bg).setFontColor(sec.fg)
         .setValue(sec.nombre).setWrapStrategy(SpreadsheetApp.WrapStrategy.OVERFLOW)
+        .setBorder(false, false, true, false, false, false, sec.bg2 || sec.bg, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
       var part2 = sh.getRange(1, _FREEZE_COLS + 1, 1, fin - _FREEZE_COLS)
       try { part2.merge() } catch(eM2) {}
       part2.setBackground(sec.bg).setFontColor(sec.fg).setValue('')
         .setWrapStrategy(SpreadsheetApp.WrapStrategy.OVERFLOW)
+        .setBorder(false, false, true, false, false, false, sec.bg2 || sec.bg, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
       try {
         part1.setNote(sec.nombre + ' · columnas ' + sec.ini + ' a ' + fin)
         part2.setNote(sec.nombre + ' · columnas ' + sec.ini + ' a ' + fin)
@@ -352,6 +348,7 @@ function _aplicarFormatoVisual(sh, lr, lc) {
     try { secRng.merge() } catch(eM) {}
     secRng.setBackground(sec.bg).setFontColor(sec.fg)
       .setValue(sec.nombre).setWrapStrategy(SpreadsheetApp.WrapStrategy.OVERFLOW)
+      .setBorder(false, false, true, false, false, false, sec.bg2 || sec.bg, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
     try {
       secRng.setNote(sec.nombre === 'GESTIÓN'
         ? 'Colores de vigencia de las celdas de fecha:\n' +
@@ -359,18 +356,20 @@ function _aplicarFormatoVisual(sh, lr, lc) {
         : sec.nombre === 'CONTROLES Y SEGUIMIENTO'
           ? 'SERVICIO CSV — controles de salud vigente del usuario (Exámenes 51 · Control Médico 52 · CCV Médico 53 · CSCV Enfermería 54) y del cuidador (EMPA/EMPAM 23 · Exámenes 24 · CCV 25).\nVigencia por fecha: 🟢 AL DIA · 🟠 POR VENCER · 🔴 VENCIDO · 🟡 PENDIENTE · ⚪ N/A'
         : sec.nombre === 'CONTROL DE SIGNOS VITALES (CSV)'
-          ? 'Últimos valores de signos vitales y laboratorio: P/A (104) · Hemoglobina Glicosilada (105) · LDL menor a 70 (106) · RAC (107) · VFG (108).\nTexto libre: escribe el valor (ej: 120/80, 6.5, 70).'
+          ? 'Últimos valores de signos vitales y laboratorio: P/A (105) · Hemoglobina Glicosilada (106) · LDL menor a 70 (107) · RAC (108) · VFG (109).\nTexto libre: escribe el valor (ej: 120/80, 6.5, 70).'
           : sec.nombre + ' · columnas ' + sec.ini + ' a ' + fin)
     } catch(eN) {}
   }
 
   var _freezeCols = lc >= _FREEZE_COLS ? _FREEZE_COLS : lc
   try { sh.setFrozenColumns(_freezeCols) } catch(eF) {}
+  // Cabecera de secciones + buscador + títulos de columna siempre visibles.
+  try { sh.setFrozenRows(3) } catch(eFR) {}
 
-  sh.setRowHeight(2, 30)
-  sh.getRange(2, 1, 1, lc).setBackground('#fff9c4')
+    sh.setRowHeight(2, 30)
+  sh.getRange(2, 1, 1, lc).setBackground('#FEF3C7')
     .setFontFamily('Arial').setFontSize(10).setVerticalAlignment('middle')
-    .setBorder(false, false, true, false, false, false, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID)
+    .setBorder(false, false, true, false, false, false, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
   for (var s2 = 0; s2 < PAC_SECCIONES.length; s2++) {
     var sec2 = PAC_SECCIONES[s2]
     if (sec2.ini > lc) break
@@ -385,13 +384,13 @@ function _aplicarFormatoVisual(sh, lr, lc) {
 
   sh.getRange(2, 2, 1, 2).merge()
   sh.getRange(2, 2, 1, 2).setTextStyle(nf).setHorizontalAlignment('center')
-  sh.getRange('D2').setFontWeight('bold').setFontSize(11).setFontColor('#1a237e')
-    .setHorizontalAlignment('center').setBackground('#fff9c4')
+  sh.getRange('D2').setFontWeight('bold').setFontSize(11).setFontColor('#1E293B')
+    .setHorizontalAlignment('center').setBackground('#FEF3C7')
     .setNote('Resultados del buscador: "X de Y pacientes". Límite: 50 resultados en la ventana de búsqueda.')
 
   sh.getRange('E2').setValue('Mostrar ▾').setFontStyle('italic')
-    .setFontColor('#555555').setFontSize(10).setHorizontalAlignment('right')
-    .setNote('Elige en F2 (una celda) qué sección mostrar temporalmente. Las demás columnas se ocultan; "TODAS" restaura. La zona del buscador (columnas 1-17) siempre queda visible.')
+    .setFontColor('#555555').setFontSize(12).setHorizontalAlignment('center')
+    .setNote('Elige en F2 (una celda) qué sección mostrar temporalmente. Las demás columnas se ocultan; "TODAS" restaura. El buscador (B2) y esta fila siempre quedan visibles.')
   var listaF = ['TODAS']
   for (var _lf = 0; _lf < PAC_SECCIONES.length; _lf++) {
     if (PAC_SECCIONES[_lf].ini <= lc) listaF.push(PAC_SECCIONES[_lf].nombre)
@@ -401,11 +400,11 @@ function _aplicarFormatoVisual(sh, lr, lc) {
     SpreadsheetApp.newDataValidation().requireValueInList(listaF, true)
       .setHelpText('Elige qué sección mostrar. Las demás columnas quedan ocultas temporalmente. "TODAS" restaura todo.')
       .build())
-    .setFontWeight('bold').setFontColor('#1a237e').setFontSize(11).setHorizontalAlignment('center')
-    .setNote('Mostrar sección: elige aquí qué sección ver (las demás columnas se ocultan temporalmente). "TODAS" restaura la vista completa. La zona del buscador (columnas 1-17) siempre queda visible.')
+    .setFontWeight('bold').setFontColor('#1E293B').setFontSize(11).setHorizontalAlignment('center')
+    .setNote('Mostrar sección: elige aquí qué sección ver (las demás columnas se ocultan temporalmente). "TODAS" restaura la vista completa. El buscador (B2) y esta fila siempre quedan visibles.')
 
-  sh.setRowHeight(3, 26)
-  sh.getRange(3, 1, 1, lc).setFontFamily('Arial').setFontSize(8).setFontWeight('bold')
+  sh.setRowHeight(3, 30)
+  sh.getRange(3, 1, 1, lc).setFontFamily('Arial').setFontSize(9).setFontWeight('bold')
     .setFontColor('#ffffff').setHorizontalAlignment('center').setVerticalAlignment('middle')
     .setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
     .setBorder(true, true, true, true, true, true)
@@ -413,7 +412,9 @@ function _aplicarFormatoVisual(sh, lr, lc) {
     var sec = PAC_SECCIONES[s]
     if (sec.ini > lc) break
     var fin = Math.min(sec.fin, lc)
-    sh.getRange(3, sec.ini, 1, fin - sec.ini + 1).setBackground(sec.bg2 || sec.bg)
+    sh.getRange(3, sec.ini, 1, fin - sec.ini + 1)
+      .setBackground(sec.bg2 || sec.bg)
+      .setBorder(false, false, true, false, false, false, sec.bg2 || sec.bg, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
   }
 
   if (lr >= 4) {
@@ -421,21 +422,26 @@ function _aplicarFormatoVisual(sh, lr, lc) {
     var bgs = []
     for (var r = 0; r < dataRows; r++) {
       var bgRow = []
-      var alt = r % 2 === 0 ? '#fafafa' : '#ffffff'
-      for (var c = 0; c < lc; c++) bgRow.push(alt)
+      var alt = _UI.zebraBg[r % 2]
+      var fzAlt = _UI.frozenBg[r % 2]
+      for (var c = 0; c < lc; c++) bgRow.push(c < _FREEZE_COLS ? fzAlt : alt)
       bgs.push(bgRow)
     }
     sh.getRange(4, 1, dataRows, lc).setBackgrounds(bgs)
       .setFontFamily('Arial').setFontSize(10).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID)
+      .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
 
-    var _overflowCols = [11, 20, 48, 61, 62, 63, 110]
+    var _overflowCols = [11, 20, 55, 62, 64, 77]
     for (var _wc = 0; _wc < _overflowCols.length; _wc++) {
       if (_overflowCols[_wc] <= lc) sh.getRange(4, _overflowCols[_wc], dataRows, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.OVERFLOW)
     }
+    var _clipCols = [48, 63, 111]
+    for (var _cc = 0; _cc < _clipCols.length; _cc++) {
+      if (_clipCols[_cc] <= lc) sh.getRange(4, _clipCols[_cc], dataRows, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
+    }
 
     if (50 <= lc) sh.getRange(4, 50, dataRows, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
-    sh.setRowHeights(4, dataRows, 24)
+    sh.setRowHeights(4, dataRows, 26)
   }
 
   _ajustarAnchosAlContenido(sh, lr, lc)
@@ -502,6 +508,240 @@ function _ajustarAnchosAlContenido(sh, lr, lc) {
   }
 }
 
+// ─── DROPDOWNS CON COLOR POR OPCIÓN ─────────────────────────────────────────
+//
+// La API de Sheets no permite colores por opción en un dropdown directo
+// (ONE_OF_LIST). La solución 100% Apps Script: "Dropdown (desde un rango)"
+// (ONE_OF_RANGE) apuntando a celdas coloreadas de la hoja oculta _Opciones.
+// Google Sheets muestra cada opción con el color de su celda fuente y el chip
+// del valor seleccionado toma ese color. Si algo falla, se cae a
+// requireValueInList (dropdown simple, mismo comportamiento actual).
+
+function _fgSobre(bg) {
+  var h = String(bg || '').replace('#', '')
+  if (h.length !== 6) return '#1a1a1a'
+  var r = parseInt(h.substr(0, 2), 16)
+  var g = parseInt(h.substr(2, 2), 16)
+  var b = parseInt(h.substr(4, 2), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#1a1a1a' : '#ffffff'
+}
+
+function _claveColorOpcion(o) {
+  return _quitarAcentos(String(o == null ? '' : o)).trim().replace(/\s+/g, ' ').toUpperCase()
+}
+
+// Índice (posición en PAC_VALIDACIONES) de cada opción, por columna. Se calcula
+// una sola vez (caché) y evita escanear la lista por cada celda al pintar.
+var _OPC_IDX_CACHE = {}
+function _idxOpcionCol(col) {
+  if (!_OPC_IDX_CACHE[col]) {
+    var m = {}
+    var lista = PAC_VALIDACIONES[col] || []
+    for (var i = 0; i < lista.length; i++) m[_claveColorOpcion(lista[i])] = i
+    _OPC_IDX_CACHE[col] = m
+  }
+  return _OPC_IDX_CACHE[col]
+}
+
+// Fondo semántico de una opción: color propio si existe en _OPC_BG; si no,
+// el de la paleta según su posición en la lista de la columna (así TODA opción
+// de dropdown tiene color). null solo si el valor no pertenece a la columna.
+function _bgOpcionCol(col, clave) {
+  var porCol = _OPC_BG_COL[col]
+  if (porCol && porCol[clave]) return porCol[clave]
+  var bg = _OPC_BG[clave]
+  if (bg) return bg
+  var idx = _idxOpcionCol(col)[clave]
+  if (idx === undefined) return null
+  return _PALETA_OPCIONES[idx % _PALETA_OPCIONES.length]
+}
+
+// Color para el chip del dropdown (hoja _Opciones): [fondo, letra].
+function _colorOpcion(col, opcion, idx) {
+  var bg = _bgOpcionCol(col, _claveColorOpcion(opcion))
+  if (!bg) bg = _PALETA_OPCIONES[idx % _PALETA_OPCIONES.length]
+  return [bg, _fgSobre(bg)]
+}
+
+// ─── COLOR POR OPCIÓN EN LA CELDA (siempre visible) ─────────────────────────
+//
+// Además del dropdown "desde un rango" (chips de color), cada celda se pinta
+// con un tinte claro del color de su opción + texto en ese color. Así el color
+// según la opción seleccionada se ve siempre, aunque el chip no lo muestre.
+
+function _tintarColor(hex, t) {
+  var h = String(hex || '').replace('#', '')
+  if (h.length !== 6) return '#ffffff'
+  var r = parseInt(h.substr(0, 2), 16)
+  var g = parseInt(h.substr(2, 2), 16)
+  var b = parseInt(h.substr(4, 2), 16)
+  r = Math.round(r + (255 - r) * t)
+  g = Math.round(g + (255 - g) * t)
+  b = Math.round(b + (255 - b) * t)
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
+}
+
+// Devuelve { bg, fg } para una opción conocida de la columna, o null si el valor
+// no pertenece a ninguna opción del dropdown (así TODA opción válida tiene color).
+// Un valor con comas (multiselección, ej. "SILLA RUEDAS, CAMA") usa estilo azul.
+function _colorCeldaOpcion(valor, col) {
+  if (String(valor).indexOf(',') >= 0) return { bg: '#F0FDFA', fg: '#0F766E' }
+  var bg = _bgOpcionCol(col, _claveColorOpcion(valor))
+  if (!bg) return null
+  return { bg: _tintarColor(bg, 0.75), fg: bg }
+}
+
+// Recolorea UNA celda de dropdown según su valor (usado en onEdit).
+// Las celdas vacías vuelven al color de cebra de su fila.
+function _pintarCeldaOpcion(sh, row, col) {
+  if (_CHECKBOX_COLS.indexOf(col) >= 0) return
+  if (col === COL.SECTOR || col === COL.VITAL) return
+  var v = String(sh.getRange(row, col).getValue() || '').trim()
+  var zebra = _UI.zebraBg[row % 2]
+  if (!v) { sh.getRange(row, col).setBackground(zebra).setFontWeight('normal'); return }
+  var cc = _colorCeldaOpcion(v, col)
+  if (!cc) return
+  var bold = PAC_MULTISELECT.indexOf(col) >= 0 && v.indexOf(',') >= 0
+  sh.getRange(row, col).setBackground(cc.bg).setFontColor(cc.fg).setFontWeight(bold ? 'bold' : 'normal')
+}
+
+// Resalta ligeramente una celda de RUN: rojo suave si el dígito verificador
+// no coincide; con nota nula vuelve al color de fila (cebra).
+function _pintarRUT(sh, row, col, nota) {
+  var zebra = _UI.zebraBg[row % 2]
+  if (nota) sh.getRange(row, col).setBackground('#FEE2E2').setFontColor('#B91C1C')
+  else sh.getRange(row, col).setBackground(zebra).setFontColor('#000000')
+}
+
+// Pinta todas las columnas con dropdown de una vez (al formatear). Solo se
+// colorean las opciones conocidas; el resto conserva su fondo actual.
+function _pintarOpciones(sh, lr, lc) {
+  if (lr < 4) return
+  var cols = Object.keys(PAC_VALIDACIONES).map(Number).filter(function(c) {
+    return c <= lc && _CHECKBOX_COLS.indexOf(c) < 0 && c !== COL.SECTOR && c !== COL.VITAL
+  })
+  for (var i = 0; i < cols.length; i++) {
+    var col = cols[i]
+    var dataRows = lr - 3
+    var rng = sh.getRange(4, col, dataRows, 1)
+    var vals = rng.getValues()
+    var actualBgs = rng.getBackgrounds()
+    var actualFgs = rng.getFontColors()
+    var bgs = [], fgs = [], fws = []
+    for (var r = 0; r < vals.length; r++) {
+      var vOpc = String(vals[r][0] || '').trim()
+      var cc = _colorCeldaOpcion(vOpc, col)
+      bgs.push([cc ? cc.bg : actualBgs[r][0]])
+      fgs.push([cc ? cc.fg : actualFgs[r][0]])
+      fws.push([(cc && PAC_MULTISELECT.indexOf(col) >= 0 && vOpc.indexOf(',') >= 0) ? 'bold' : 'normal'])
+    }
+    rng.setBackgrounds(bgs)
+    rng.setFontColors(fgs)
+    rng.setFontWeights(fws)
+  }
+}
+
+// ─── DETECTOR DE FECHAS MAL ESCRITAS / FUTURAS ───────────────────────────────
+
+// Marca celdas de columnas de fecha con texto que no es fecha (ej. "PENDIENTE",
+// "ENTREGADO", "X") y fechas futuras en columnas de control (año mal escrito).
+// Las celdas correctas no se tocan. soloFila: solo esa fila (usado en onEdit).
+function _pintarFechasInvalidas(sh, lr, lc, soloFila) {
+  if (lr < 4) return
+  var r0 = soloFila || 4
+  var nr = lr - r0 + 1
+  var hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  var hoyT = hoy.getTime()
+  var NO_FUTURA = {}
+  for (var nfi = 0; nfi < _CONTROL_FECHAS.length; nfi++) {
+    var nfc = _CONTROL_FECHAS[nfi][1]
+    if (nfc !== COL.F_PROXIMA_CURACION) NO_FUTURA[nfc] = true
+  }
+  // Fechas de nacimiento, egreso y fallecimiento tampoco pueden ser futuras.
+  NO_FUTURA[COL.F_NACIMIENTO] = true
+  NO_FUTURA[COL.F_EGRESO] = true
+  NO_FUTURA[COL.F_FALLECIMIENTO] = true
+  for (var i = 0; i < _FECHAS_VA.length; i++) {
+    var col = _FECHAS_VA[i]
+    if (col > lc) continue
+    var rng = sh.getRange(r0, col, nr, 1)
+    var vals = rng.getValues()
+    var bgs = rng.getBackgrounds()
+    var fgs = rng.getFontColors()
+    var wts = rng.getFontWeights()
+    var nb = [], nf = [], nw = [], notas = [], toca = false
+    for (var r = 0; r < nr; r++) {
+      var v = vals[r][0]
+      var txt = v == null ? '' : String(v).trim()
+      var t = txt.toUpperCase()
+      if (txt === '' || t === 'N/A' || t === 'NA') {
+        nb.push(null); nf.push(null); nw.push(null); notas.push('')
+        continue
+      }
+      var f = _parseDate(v)
+      if (!f && !_parseDate(txt.replace(/-/g, '/'))) {
+        toca = true
+        nb.push('#FEE2E2'); nf.push('#B91C1C'); nw.push('bold')
+        notas.push('⚠️ Este texto no es una fecha: escribe dd/mm/aaaa o N/A')
+        continue
+      }
+      if (NO_FUTURA[col] && _parseDate(v).getTime() > hoyT) {
+        toca = true
+        nb.push('#FEF3C7'); nf.push('#A16207'); nw.push('normal')
+        notas.push('⚠️ Fecha futura: debe ser una fecha ya realizada (¿año mal escrito?)')
+        continue
+      }
+      nb.push(null); nf.push(null); nw.push(null); notas.push('')
+    }
+    if (!toca) continue
+    for (var r2 = 0; r2 < nr; r2++) {
+      if (nb[r2] !== null) { bgs[r2][0] = nb[r2]; fgs[r2][0] = nf[r2]; wts[r2][0] = nw[r2] }
+    }
+    rng.setBackgrounds(bgs).setFontColors(fgs).setFontWeights(wts)
+    rng.setNotes([notas])
+  }
+}
+
+// Mantiene la hoja oculta _Opciones: una columna por dropdown, cada opción con
+// fondo/letra coloreados. Devuelve { col: { letra, vals } } por columna.
+function _sincronizarOpciones(ss) {
+  var hoja = ss.getSheetByName('_Opciones')
+  if (!hoja) {
+    hoja = ss.insertSheet('_Opciones')
+    try { hoja.hideSheet() } catch (eHid) {}
+    try { hoja.setTabColor('#DDDDDD') } catch (eTab) {}
+  }
+  hoja.clear()
+
+  var cols = Object.keys(PAC_VALIDACIONES).map(Number).sort(function(a, b) { return a - b })
+  var refs = {}
+  for (var i = 0; i < cols.length; i++) {
+    var c = cols[i]
+    var lista = PAC_VALIDACIONES[c]
+    if (!lista || !lista.length || lista.length > 50) continue
+    var letra = colToLetter(i + 1)
+    var filas = lista.length + 1
+    var rng = hoja.getRange(1, i + 1, filas, 1)
+
+    var datos = [['Col ' + c + (typeof _COLUMNAS !== 'undefined' && _COLUMNAS[c] ? ' · ' + _COLUMNAS[c].name : '')]]
+    for (var o = 0; o < lista.length; o++) datos.push([String(lista[o])])
+    rng.setValues(datos)
+
+    var bgs = [[_UI.hdrBg]], fgs = [['#ffffff']]
+    for (var o2 = 0; o2 < lista.length; o2++) {
+      var cc = _colorOpcion(c, lista[o2], o2)
+      bgs.push([cc[0]])
+      fgs.push([cc[1]])
+    }
+    rng.setBackgrounds(bgs).setFontColors(fgs).setFontSize(10).setVerticalAlignment('middle')
+    hoja.getRange(1, i + 1).setFontWeight('bold')
+
+    refs[c] = { letra: letra, vals: lista.slice(0) }
+  }
+  return refs
+}
+
 function _aplicarValidaciones(sh, lr, lc) {
   var cols = Object.keys(PAC_VALIDACIONES).map(Number).filter(function(c) {
     return c <= lc
@@ -520,12 +760,22 @@ function _aplicarValidaciones(sh, lr, lc) {
   }
   groups.push(cur)
 
+  var refs = null
+  try { refs = _sincronizarOpciones(sh.getParent()) } catch (eOpt) {}
+
   if (lr >= 4) {
     var rowCount = lr - 3
     for (var gi = 0; gi < groups.length; gi++) {
       var g = groups[gi]
-      var dv = SpreadsheetApp.newDataValidation()
-        .requireValueInList(PAC_VALIDACIONES[g[0]], true).setAllowInvalid(true).build()
+      var rngSrc = refs ? refs[g[0]] : null
+      var dv
+      if (rngSrc && rngSrc.vals.length <= 50) {
+        var rr = sh.getParent().getRange("'_Opciones'!" + rngSrc.letra + '2:' + rngSrc.letra + (rngSrc.vals.length + 1))
+        dv = SpreadsheetApp.newDataValidation().requireValueInRange(rr).setAllowInvalid(true).build()
+      } else {
+        dv = SpreadsheetApp.newDataValidation()
+          .requireValueInList(PAC_VALIDACIONES[g[0]], true).setAllowInvalid(true).build()
+      }
       sh.getRange(4, g[0], rowCount, g.length).setDataValidation(dv)
     }
   }
@@ -547,6 +797,9 @@ var _DROP_VARIANTES = {
   'NO INGRESO': 'NO INGRESA', 'NO INGRESA.': 'NO INGRESA',
   'SILLA DE RUEDAS': 'SILLA RUEDAS', 'SILLA DE RUEDA': 'SILLA RUEDAS',
   'PEND.': 'PENDIENTE',
+  'COLCHON ANTI ESCARAS': 'COLCHON ANTIESCARAS', 'COLCHON ANTI ESCARA': 'COLCHON ANTIESCARAS',
+  'COJIN ANTIESCARAS': 'COJIN + COLCHON', 'COJIN COLCHON': 'COJIN + COLCHON',
+  'RECHAZADO': 'RECHAZA',
 }
 
 function _normalizarValorDropdown(col, v) {
@@ -588,6 +841,14 @@ function _corregirDropdownsPacientes(sh, lr) {
       var n
       if (col === 6) n = _normalizarVitalEstado(v)
       else if (col === 7 || col === 17) n = _normalizarSexo(v) || String(v).trim().replace(/\s+/g, ' ')
+      else if (PAC_MULTISELECT.indexOf(col) >= 0 && String(v).indexOf(',') >= 0) {
+        var _parts = String(v).split(',')
+        var _normParts = []
+        for (var _pp = 0; _pp < _parts.length; _pp++) {
+          _normParts.push(_normalizarValorDropdown(col, _parts[_pp]))
+        }
+        n = _normParts.join(', ')
+      }
       else n = _normalizarValorDropdown(col, v)
       if (n !== v) { data[r][0] = n; dirty = true; corregidas++ }
     }
@@ -647,35 +908,35 @@ function _refrescarFormatoCondicional(sh, lr, lc) {
     }
   }
 
-  var _sexoColores = { 'F': ['#FCE4EC', '#C2185B'], 'M': ['#E3F2FD', '#1565C0'] }
+  var _sexoColores = { 'F': ['#FCE7F3', '#BE185D'], 'M': ['#E0F2FE', '#0369A1'] }
   for (var _sx = 0; _sx < 2; _sx++) {
     var _sxc = _sx === 0 ? COL.SEXO : COL.SEXO_CUIDADOR
     if (_sxc <= lc) _porCol(_sexoColores, _sxc, sh.getRange(4, _sxc, lr - 3, 1))
   }
 
   var _estadoColores = {
-    'VIGENTE': ['#E8F5E9', '#2E7D32'], 'FALLECIDO': ['#FFEBEE', '#C62828'],
-    'EGRESO': ['#FFF3E0', '#E65100'], 'EGRESO POR ALTA': ['#ECEFF1', '#78909C'],
-    'SUSPENDIDO': ['#ECEFF1', '#546E7A'], 'ALTA': ['#E0F7FA', '#00695C'],
-    'TRASLADO': ['#FFF8E1', '#F57F17'], 'PENDIENTE': ['#FFFDE7', '#F9A825'],
+    'VIGENTE': ['#DCFCE7', '#15803D'], 'FALLECIDO': ['#FEE2E2', '#B91C1C'],
+    'EGRESO': ['#FFEDD5', '#C2410C'], 'EGRESO POR ALTA': ['#EEF1F5', '#64748B'],
+'SUSPENDIDO': ['#EEF1F5', '#475569'], 'ALTA': ['#CCFBF1', '#0F766E'],
+  'TRASLADO': ['#CCFBF1', '#115E59'], 'PENDIENTE': ['#FEF3C7', '#B45309'],
   }
   _porCol(_estadoColores, COL.VITAL, sh.getRange(4, COL.VITAL, lr - 3, 1))
 
-  var _vacColores = { 'SI': ['#E8F5E9', '#2E7D32'], 'R': ['#E8F5E9', '#2E7D32'], 'NO': ['#FFEBEE', '#C62828'], 'P': ['#FFFDE7', '#F9A825'], 'N/A': ['#F5F5F5', '#999999'] }
+  var _vacColores = { 'SI': ['#DCFCE7', '#15803D'], 'R': ['#DCFCE7', '#15803D'], 'NO': ['#FEE2E2', '#B91C1C'], 'P': ['#FEF3C7', '#B45309'], 'N/A': ['#F1F5F9', '#94A3B8'] }
   for (var _vci = 0; _vci < _VACUNA_COLS.length; _vci++) {
     var _vcc = _VACUNA_COLS[_vci]
     if (_vcc <= lc) _porCol(_vacColores, _vcc, sh.getRange(4, _vcc, lr - 3, 1))
   }
 
   if (COL.ESTADO_NUTRICIONAL <= lc) _porCol({
-    'NORMAL': ['#E8F5E9', '#2E7D32'], 'SOBREPESO': ['#FFF3E0', '#E65100'],
-    'OBESIDAD': ['#FFEBEE', '#C62828'], 'BAJO PESO': ['#FFF8E1', '#F57F17'],
-    'N/A': ['#ECEFF1', '#78909C'],
+    'NORMAL': ['#DCFCE7', '#15803D'], 'SOBREPESO': ['#FFEDD5', '#C2410C'],
+    'OBESIDAD': ['#FEE2E2', '#B91C1C'], 'BAJO PESO': ['#FEF3C7', '#B45309'],
+    'N/A': ['#EEF1F5', '#64748B'],
   }, COL.ESTADO_NUTRICIONAL, sh.getRange(4, COL.ESTADO_NUTRICIONAL, lr - 3, 1))
 
   if (COL.RESULTADO_ZARIT <= lc) _porCol({
-    'SIN SOBRECARGA': ['#E8F5E9', '#2E7D32'], 'SOBRECARGA LEVE': ['#FFF3E0', '#E65100'],
-    'SOBRECARGA INTENSA': ['#FFEBEE', '#C62828'], 'N/A': ['#ECEFF1', '#78909C'],
+    'SIN SOBRECARGA': ['#DCFCE7', '#15803D'], 'SOBRECARGA LEVE': ['#FFEDD5', '#C2410C'],
+    'SOBRECARGA INTENSA': ['#FEE2E2', '#B91C1C'], 'N/A': ['#EEF1F5', '#64748B'],
   }, COL.RESULTADO_ZARIT, sh.getRange(4, COL.RESULTADO_ZARIT, lr - 3, 1))
 
   for (var _di = 0; _di < _FECHAS_VA.length; _di++) {
@@ -686,6 +947,18 @@ function _refrescarFormatoCondicional(sh, lr, lc) {
   try {
     rules.push(_tCF('N/A', sh.getRange(4, 1, lr - 3, lc), { bg: _pf['N/A'][0], fg: _pf['N/A'][1] }))
   } catch(eNA) {}
+
+  // ── MEJORAS VISUALES AUTOMÁTICAS (se recalculan solas, sin menú) ─────────
+  // RUN duplicado: mismo RUN en dos pacientes (más de una fila con el mismo valor)
+  if (COL.RUN <= lc) {
+    rules.push(_rCF('=AND($H4<>"",COUNTIF($H$4:$H,$H4)>1)',
+      sh.getRange(4, COL.RUN, lr - 3, 1), { bg: '#FEE2E2', fg: '#B91C1C', bold: true }))
+  }
+  // Observaciones con avisos ⚠️ (fechas inválidas, atenciones mal registradas, etc.)
+  if (COL.OBSERVACIONES <= lc) {
+    rules.push(_rCF('=ISNUMBER(SEARCH("' + '\u26a0\ufe0f' + '",$' + colToLetter(COL.OBSERVACIONES) + '4))',
+      sh.getRange(4, COL.OBSERVACIONES, lr - 3, 1), { bg: '#FEF3C7', fg: '#A16207' }))
+  }
 
   try { sh.setConditionalFormatRules(rules) } catch(e) {}
 }
@@ -762,8 +1035,8 @@ function _FORMATEADAS() {
   s[10] = true
   s[19] = true
   s[22] = true
-  s[65] = true
-  s[109] = true
+  s[66] = true
+  s[110] = true
   return s
 }
 var _COLS_FORMATEADAS = _FORMATEADAS()
@@ -815,18 +1088,32 @@ function crearParametros() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   ss.toast('Creando hoja Parámetros…', 'PADDS', 1)
   var old = ss.getSheetByName('Parámetros')
+  var valoresPrevios = {}
+  if (old) {
+    try {
+      var dPrev = old.getDataRange().getValues()
+      for (var _pr = 0; _pr < dPrev.length; _pr++) {
+        var _pn = String(dPrev[_pr][0] || '').trim().toUpperCase()
+        if (!_pn) continue
+        if (_pn.indexOf('PARÁMETRO') === 0 || _pn.indexOf('PARAMETRO') === 0) continue
+        if (_pn.indexOf('DE VIGENCIA') >= 0 || _pn.indexOf('PADDS') >= 0 || _pn.indexOf('💡') >= 0 || _pn.indexOf('Los cambios') >= 0) continue
+        valoresPrevios[_pn] = { valor: dPrev[_pr][1], unidad: dPrev[_pr][2] }
+      }
+    } catch(ePV) {}
+  }
   if (old) ss.deleteSheet(old)
 
   var sh = ss.insertSheet('Parámetros')
   sh.setTabColor('#8C959D')
   sh.setColumnWidth(1, 340)
-  sh.setColumnWidth(2, 110)
-  sh.setColumnWidth(3, 580)
+  sh.setColumnWidth(2, 100)
+  sh.setColumnWidth(3, 110)
+  sh.setColumnWidth(4, 560)
 
-  var NAVY = '#1a237e', MID = '#283593', ACCENT = '#3f51b5'
-  var LIGHT = '#e8eaf6', WHITE = '#ffffff', BORDER = '#c5cae9'
-  var LIGHT_GREEN = '#e8f5e9', LIGHT_BLUE = '#e3f2fd', LIGHT_ORANGE = '#fff3e0'
-  var LIGHT_PURPLE = '#f3e5f5', LIGHT_TEAL = '#e0f2f1', LIGHT_PINK = '#fce4ec'
+  var NAVY = _UI.hdrBg, MID = _UI.accent, ACCENT = _UI.accent2
+  var LIGHT = '#EEF2F7', WHITE = '#ffffff', BORDER = _UI.borderMed
+  var LIGHT_GREEN = '#DCFCE7', LIGHT_BLUE = '#E0F2FE', LIGHT_ORANGE = '#FFEDD5'
+  var LIGHT_PURPLE = '#F3E8FF', LIGHT_TEAL = '#CCFBF1', LIGHT_PINK = '#FCE7F3'
   var BS = SpreadsheetApp.BorderStyle.SOLID
 
   function _secColor(i) {
@@ -834,82 +1121,82 @@ function crearParametros() {
     return palette[i % palette.length]
   }
 
-  sh.getRange(1, 1, 1, 3).merge()
+  sh.getRange(1, 1, 1, 4).merge()
   sh.getRange(1, 1)
     .setValue('⚙  PARÁMETROS DE VIGENCIA  —  PADDS 2026')
-    .setFontFamily('Calibri').setFontSize(22).setFontWeight('bold')
+    .setFontFamily(_UI.font).setFontSize(22).setFontWeight('bold')
     .setFontColor(WHITE).setBackground(NAVY)
     .setVerticalAlignment('middle').setHorizontalAlignment('left')
   sh.setRowHeight(1, 52)
 
-  sh.getRange(2, 1, 1, 3).merge()
+  sh.getRange(2, 1, 1, 4).merge()
   sh.getRange(2, 1)
-    .setValue('Configure aquí los plazos de vigencia de cada prestación. Al modificar un valor, el cambio se aplica al ejecutar "Recalcular estados" o al editar una fecha. El color de cada celda de fecha indica su vigencia.')
-    .setFontFamily('Calibri').setFontSize(11).setFontColor('#7986cb')
+    .setValue('Plazos de vigencia por prestación: valor en la columna VALOR y unidad (MESES, DÍAS o N/A = desactivado) en UNIDAD. Los cambios se aplican con "Recalcular estados" o al editar una fecha.')
+    .setFontFamily(_UI.font).setFontSize(11).setFontColor(MID)
     .setBackground(LIGHT).setVerticalAlignment('middle').setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
-  sh.setRowHeight(2, 30)
+  sh.setRowHeight(2, 34)
 
   var GRUPOS = [
     {
       nombre: '🩺  CONTROLES MÉDICOS Y EXÁMENES',
-      color: '#1565c0',
+      color: '#0F766E',
       items: [
-        ['EXAMENES USUARIO',            6, 'Plazo máximo (meses) entre cada toma de exámenes del usuario. Si la última fecha supera el plazo, la celda se colorea rojo (VENCIDO).'],
-        ['EXAMENES CUIDADOR',          12, 'Plazo máximo (meses) entre exámenes del cuidador principal.'],
-        ['CONTROL MEDICO',              6, 'Tiempo máximo (meses) entre controles médicos. Pasado el plazo se colorea rojo y sube la prioridad general.'],
-        ['PIC-1C',                     12, 'Vigencia del Plan de Intervención Individual (1 componente). Se renueva una vez al año.'],
-        ['PIC-2C',                     12, 'Vigencia del Plan de Intervención Individual (2 componentes). Se renueva una vez al año.'],
-        ['RECETAS CONTROLADAS',         3, 'Vigencia de las recetas controladas (col F. RECETA). Las recetas de medicamentos controlados (ej: clonazepam) suelen cubrir hasta 3 meses.'],
+        ['EXAMENES USUARIO',            6, 'Plazo entre tomas de exámenes del usuario.'],
+        ['EXAMENES CUIDADOR',          12, 'Plazo entre exámenes del cuidador.'],
+        ['CONTROL MEDICO',              6, 'Plazo entre controles médicos.'],
+        ['PIC-1C',                     12, 'Vigencia del PIC (1 componente).'],
+        ['PIC-2C',                     12, 'Vigencia del PIC (2 componentes).'],
+        ['RECETAS CONTROLADAS',         3, 'Vigencia de recetas controladas.'],
       ],
     },
     {
       nombre: '💓  CONTROLES CARDIOVASCULARES Y ESPECIALIDADES',
-      color: '#c62828',
+      color: '#B91C1C',
       items: [
-        ['CCV MEDICO',                  6, 'Plazo (meses) entre controles cardiovasculares realizados por médico.'],
-        ['CSCV ENFERMERIA',             6, 'Plazo (meses) entre controles cardiovasculares realizados por enfermería.'],
-        ['PODOLOGO',                    6, 'Plazo (meses) entre atenciones de podología, especialmente con diabetes o riesgo de pie diabético.'],
-        ['NUTRICIONISTA',               6, 'Plazo (meses) entre controles nutricionales.'],
-        ['FONOAUDIOLOGA',              12, 'Plazo (meses) entre atenciones de fonoaudiología. Seguimiento anual.'],
-        ['CONTROL KINESICO',            6, 'Plazo (meses) entre controles kinésicos para verificar evolución funcional.'],
-        ['ODONTOLOGIA',                12, 'Plazo (meses) entre atenciones odontológicas. Revisión anual salvo patologías que requieran más frecuencia.'],
+        ['CCV MEDICO',                  6, 'Plazo entre CCV de médico.'],
+        ['CSCV ENFERMERIA',             6, 'Plazo entre CSCV de enfermería.'],
+        ['PODOLOGO',                    6, 'Plazo entre atenciones de podología.'],
+        ['NUTRICIONISTA',               6, 'Plazo entre controles nutricionales.'],
+        ['FONOAUDIOLOGA',              12, 'Plazo entre atenciones de fonoaudiología.'],
+        ['CONTROL KINESICO',            6, 'Plazo entre controles kinésicos.'],
+        ['ODONTOLOGIA',                12, 'Plazo entre atenciones odontológicas.'],
       ],
     },
     {
       nombre: '📋  EMPA / EMPAM Y PREVENCIÓN',
-      color: '#2e7d32',
+      color: '#15803D',
       items: [
-        ['EMPA/EMPAM CUIDADOR',        12, 'Vigencia del examen preventivo del cuidador principal (meses).'],
-        ['EMPA/EMPAM USUARIO',         12, 'Vigencia del examen preventivo del usuario (meses).'],
-        ['CCV VIGENTE CUIDADOR',       12, 'Vigencia de la CCV (cardiopatía descompensada) del cuidador (meses).'],
+        ['EMPA/EMPAM CUIDADOR',        12, 'Vigencia del examen preventivo del cuidador.'],
+        ['EMPA/EMPAM USUARIO',         12, 'Vigencia del examen preventivo del usuario.'],
+        ['CCV VIGENTE CUIDADOR',       12, 'Vigencia de la CCV del cuidador.'],
       ],
     },
     {
       nombre: '🧠  SOCIAL / PSICOLÓGICO',
-      color: '#6a1b9a',
+      color: '#7E22CE',
       items: [
-        ['ZARIT',                      12, 'Plazo (meses) entre aplicaciones de la escala Zarit (sobrecarga del cuidador).'],
-        ['CONSULTA TRABAJADORA SOCIAL',12, 'Plazo (meses) entre consultas de trabajadora social.'],
-        ['CONSULTA PSICOLOGA',         12, 'Plazo (meses) entre consultas psicológicas.'],
+        ['ZARIT',                      12, 'Plazo entre aplicaciones de la escala Zarit.'],
+        ['CONSULTA TRABAJADORA SOCIAL',12, 'Plazo entre consultas de trabajadora social.'],
+        ['CONSULTA PSICOLOGA',         12, 'Plazo entre consultas psicológicas.'],
       ],
     },
     {
       nombre: '🩹  SONDA FOLEY Y CURACIONES',
-      color: '#ad1457',
+      color: '#BE185D',
       items: [
-        ['SONDA FOLEY',                 3, 'Plazo (meses) entre cambios de sonda. La fecha de "F. ULTIMO CAMBIO" se colorea según este plazo.'],
-        ['CURACIONES',                  1, 'Plazo (meses) entre curaciones de heridas (F. ULTIMA CURACION).'],
-        ['PROXIMA CURACION',            0, 'Plazo (meses) para F. PROXIMA CURACION: 0 = vence apenas pasa la fecha indicada.'],
+        ['SONDA FOLEY',                 3, 'MESES', 'Plazo entre cambios de sonda.'],
+        ['CURACIONES',                  1, 'MESES', 'Plazo entre curaciones de heridas.'],
+        ['PROXIMA CURACION',            0, 'MESES', '0 = vence al pasar la fecha indicada.'],
       ],
     },
     {
       nombre: '📚  CAPACITACIONES, INMUNIZACIÓN Y AVISOS',
-      color: '#e65100',
+      color: '#C2410C',
       items: [
-        ['CAPACITACIONES',              6, 'Vigencia de las capacitaciones del cuidador (columnas 84-91). Cada taller tiene validez semestral.'],
-        ['INMUNIZACION',               12, 'Las vacunas (columnas 80-83) se registran con dropdown: SI · NO · N/A · R (refuerzo) · P (programada). Este plazo queda como referencia.'],
-        ['PAÑALES',                     2, 'Plazo (meses) entre entregas de pañales (F. ENTREGA PAÑALES).'],
-        ['Días aviso',                 15, 'Cantidad de días antes del vencimiento para marcar "POR VENCER" (color ámbar).'],
+        ['CAPACITACIONES',              6, 'MESES', 'Vigencia de capacitaciones del cuidador.'],
+        ['INMUNIZACION',               12, 'MESES', 'Plazo de referencia de vacunas.'],
+        ['PAÑALES',                     2, 'MESES', 'Plazo entre entregas de pañales.'],
+        ['Días aviso',                 15, '', 'Días antes de vencer para marcar POR VENCER.'],
       ],
     },
   ]
@@ -921,10 +1208,10 @@ function crearParametros() {
     var grupo = GRUPOS[g]
     var secBg = _secColor(g)
 
-    sh.getRange(row, 1, 1, 3).merge()
+    sh.getRange(row, 1, 1, 4).merge()
     sh.getRange(row, 1)
       .setValue(grupo.nombre)
-      .setFontFamily('Calibri').setFontSize(12).setFontWeight('bold')
+      .setFontFamily(_UI.font).setFontSize(12).setFontWeight('bold')
       .setFontColor(WHITE).setBackground(grupo.color)
       .setVerticalAlignment('middle').setHorizontalAlignment('left')
       .setBorder(true, true, true, true, true, true, BORDER, BS)
@@ -932,43 +1219,74 @@ function crearParametros() {
     row++
 
     sh.getRange(row, 1).setValue('PARÁMETRO')
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold')
-      .setFontColor(grupo.color).setBackground('#f5f5f5')
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold')
+      .setFontColor(grupo.color).setBackground('#F1F5F9')
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, false, false, BORDER, BS2)
-    sh.getRange(row, 2).setValue('MESES')
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold')
-      .setFontColor(grupo.color).setBackground('#f5f5f5')
+    sh.getRange(row, 2).setValue('VALOR')
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold')
+      .setFontColor(grupo.color).setBackground('#F1F5F9')
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, false, false, BORDER, BS2)
-    sh.getRange(row, 3).setValue('DESCRIPCIÓN')
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold')
-      .setFontColor(grupo.color).setBackground('#f5f5f5')
+    sh.getRange(row, 3).setValue('UNIDAD')
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold')
+      .setFontColor(grupo.color).setBackground('#F1F5F9')
+      .setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, false, false, BORDER, BS2)
+    sh.getRange(row, 4).setValue('DESCRIPCIÓN')
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold')
+      .setFontColor(grupo.color).setBackground('#F1F5F9')
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, false, false, BORDER, BS2)
     sh.setRowHeight(row, 22)
     row++
 
+    var _dvUnidad = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['MESES', 'DIAS', 'N/A'], true).setAllowInvalid(true).build()
+
     for (var i = 0; i < grupo.items.length; i++) {
       var item = grupo.items[i]
       var bg = i % 2 === 0 ? WHITE : secBg
+      var unidad = (item.length >= 4 && String(item[2]).trim())
+        ? String(item[2]).trim()
+        : 'MESES'
+      var descripcion = String(item.length >= 4 ? item[3] : item[2] || '').trim()
+      var esDiasAviso = String(item[0]).toUpperCase().indexOf('DIAS') === 0
+      var claveParam = String(item[0]).trim().toUpperCase()
+      var prev = valoresPrevios[claveParam]
+      var _unidadesValidas = { 'MESES': true, 'DIAS': true, 'DÍAS': true, 'N/A': true }
+      var _unidadUso = unidad
+      if (prev && String(prev.unidad || '').trim()) {
+        var _uPrev = String(prev.unidad).trim().toUpperCase()
+        if (_uPrev === 'DÍAS') _uPrev = 'DIAS'
+        if (_unidadesValidas[_uPrev]) _unidadUso = _uPrev
+      }
+      var _valorUso = (prev && String(prev.valor) !== '' && prev.valor !== undefined && prev.valor !== null) ? prev.valor : item[1]
 
       sh.getRange(row, 1).setValue(item[0])
-        .setFontFamily('Calibri').setFontSize(11).setFontWeight('bold')
+        .setFontFamily(_UI.font).setFontSize(11).setFontWeight('bold')
         .setFontColor(NAVY).setBackground(bg)
         .setVerticalAlignment('middle')
         .setBorder(false, true, false, true, false, false, BORDER, BS)
-        .setNote(item[2])
+        .setNote(descripcion)
 
-      sh.getRange(row, 2).setValue(item[1])
-        .setFontFamily('Calibri').setFontSize(14).setFontWeight('bold')
+      sh.getRange(row, 2).setValue(_valorUso)
+        .setFontFamily(_UI.font).setFontSize(14).setFontWeight('bold')
         .setFontColor(grupo.color).setBackground(WHITE)
         .setHorizontalAlignment('center').setVerticalAlignment('middle')
         .setNumberFormat('0')
         .setBorder(true, true, true, true, false, false, grupo.color, BS2)
 
-      sh.getRange(row, 3).setValue(item[2])
-        .setFontFamily('Calibri').setFontSize(10).setFontColor('#424242')
+      sh.getRange(row, 3).setValue(esDiasAviso ? '' : _unidadUso)
+        .setFontFamily(_UI.font).setFontSize(11).setFontWeight('bold')
+        .setFontColor(grupo.color).setBackground(WHITE)
+        .setHorizontalAlignment('center').setVerticalAlignment('middle')
+        .setBorder(true, true, true, true, false, false, grupo.color, BS2)
+        .setNote(esDiasAviso ? '' : 'Unidad del plazo: MESES · DIAS · N/A (N/A = vigencia desactivada: la fecha no se colorea ni alerta).')
+      if (!esDiasAviso) sh.getRange(row, 3).setDataValidation(_dvUnidad)
+
+      sh.getRange(row, 4).setValue(descripcion)
+        .setFontFamily(_UI.font).setFontSize(10).setFontColor('#424242')
         .setBackground(bg).setVerticalAlignment('middle')
         .setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
         .setBorder(false, true, false, true, false, false, BORDER, BS)
@@ -978,22 +1296,22 @@ function crearParametros() {
     }
 
     sh.setRowHeight(row, 6)
-    sh.getRange(row, 1, 1, 3).setBackground('#f5f5f5').setBorder(false, false, false, false, false, false)
+    sh.getRange(row, 1, 1, 4).setBackground('#F1F5F9').setBorder(false, false, false, false, false, false)
     row++
   }
 
-  sh.getRange(row, 1, 1, 3).merge()
+  sh.getRange(row, 1, 1, 4).merge()
   sh.getRange(row, 1)
     .setValue('💡  Los cambios se aplican automáticamente al ejecutar "Recalcular estados" o al editar una fecha en ' + HOJA_PAC + '.')
-    .setFontFamily('Calibri').setFontSize(10).setFontColor('#7986cb')
+    .setFontFamily(_UI.font).setFontSize(10).setFontColor(MID)
     .setBackground(LIGHT).setVerticalAlignment('middle').setHorizontalAlignment('center')
   sh.setRowHeight(row, 28)
   row++
 
-  sh.getRange(row, 1, 1, 3).merge()
+  sh.getRange(row, 1, 1, 4).merge()
   sh.getRange(row, 1)
     .setValue('PADDS 2026 — Centro de Salud Familiar San Joaquín')
-    .setFontFamily('Calibri').setFontSize(9).setFontColor('#b0bec5')
+    .setFontFamily(_UI.font).setFontSize(9).setFontColor('#b0bec5')
     .setBackground(LIGHT).setVerticalAlignment('middle').setHorizontalAlignment('center')
   sh.setRowHeight(row, 22)
 
@@ -1003,6 +1321,9 @@ function crearParametros() {
   var maxRows = sh.getMaxRows()
   var neededRows = row + 1
   if (maxRows > neededRows) sh.deleteRows(neededRows, maxRows - neededRows + 1)
+
+  _paramCache = null
+  try { CacheService.getScriptCache().remove(_PARAM_CACHE_KEY) } catch(e) {}
 
   ss.toast('Hoja Parámetros creada/actualizada', 'PADDS', 4)
 }
@@ -1022,27 +1343,27 @@ function crearInstrucciones() {
   sh.setColumnWidth(4, 320)
   sh.setColumnWidth(5, 200)
 
-  var DARK = '#1b5e20', MID = '#2e7d5b', LIGHT = '#e8f5e9', WHITE = '#ffffff'
+  var DARK = _UI.hdrBg, MID = _UI.accent, LIGHT = '#E0F2FE', WHITE = '#ffffff'
   var BS = SpreadsheetApp.BorderStyle.SOLID
 
   sh.getRange(1, 1, 1, 5).merge()
   sh.getRange(1, 1).setValue('PADDS 2026  —  Referencia de Columnas')
-    .setFontFamily('Calibri').setFontSize(20).setFontWeight('bold')
+    .setFontFamily(_UI.font).setFontSize(20).setFontWeight('bold')
     .setFontColor(WHITE).setBackground(DARK)
     .setVerticalAlignment('middle')
   sh.setRowHeight(1, 44)
 
   sh.getRange(2, 1, 1, 5).merge()
-  sh.getRange(2, 1).setValue('Pase el mouse sobre los encabezados en Pacientes (fila 3) para ver la descripción · 🩺 Pacientes → 🛠️ Mantenimiento de datos → "🎨 Formatear hoja" aplica el diseño completo')
-    .setFontFamily('Calibri').setFontSize(11).setFontStyle('italic')
-    .setFontColor('#e8f5e9').setBackground(MID)
+  sh.getRange(2, 1).setValue('Pase el mouse sobre los encabezados en Pacientes (fila 3) para ver la descripción · 🩺 Pacientes → 🛠️ Datos → "🎨 Formatear hoja" aplica el diseño completo')
+    .setFontFamily(_UI.font).setFontSize(11).setFontStyle('italic')
+    .setFontColor('#E0F2FE').setBackground(MID)
     .setVerticalAlignment('middle')
   sh.setRowHeight(2, 24)
 
   var HD = ['N°', 'CAMPO', 'DESCRIPCIÓN', 'VALORES', 'AUTOMATIZACIÓN']
   for (var c = 0; c < HD.length; c++) {
     sh.getRange(3, c + 1).setValue(HD[c])
-      .setFontFamily('Calibri').setFontSize(10).setFontWeight('bold')
+      .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold')
       .setFontColor(WHITE).setBackground(MID)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true)
@@ -1056,7 +1377,7 @@ function crearInstrucciones() {
 
     sh.getRange(row, 1, 1, 5).merge()
     sh.getRange(row, 1).setValue(sec.nombre)
-      .setFontFamily('Calibri').setFontSize(11).setFontWeight('bold')
+      .setFontFamily(_UI.font).setFontSize(11).setFontWeight('bold')
       .setFontColor(WHITE).setBackground(colBg)
       .setVerticalAlignment('middle')
     sh.setRowHeight(row, 22)
@@ -1069,30 +1390,30 @@ function crearInstrucciones() {
       var bg = alt ? WHITE : '#f5f7fa'
 
       sh.getRange(row, 1).setValue(col.n)
-        .setFontFamily('Consolas,monospace').setFontSize(9).setFontColor('#888')
+        .setFontFamily('Courier New').setFontSize(9).setFontColor('#888')
         .setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-        .setBorder(true, true, true, true, true, true, '#e0e0e0', BS)
+        .setBorder(true, true, true, true, true, true, _UI.border, BS)
 
       sh.getRange(row, 2).setValue(col.name)
-        .setFontFamily('Calibri').setFontSize(10).setFontWeight('bold')
+        .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold')
         .setFontColor('#212121').setBackground(bg).setVerticalAlignment('middle')
-        .setBorder(true, true, true, true, true, true, '#e0e0e0', BS)
+        .setBorder(true, true, true, true, true, true, _UI.border, BS)
 
       sh.getRange(row, 3).setValue(col.desc)
-        .setFontFamily('Calibri').setFontSize(9).setFontColor('#424242')
+        .setFontFamily(_UI.font).setFontSize(9).setFontColor('#424242')
         .setBackground(bg).setVerticalAlignment('middle').setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
-        .setBorder(true, true, true, true, true, true, '#e0e0e0', BS)
+        .setBorder(true, true, true, true, true, true, _UI.border, BS)
 
       sh.getRange(row, 4).setValue(col.vals)
-        .setFontFamily('Calibri').setFontSize(9).setFontColor('#555')
+        .setFontFamily(_UI.font).setFontSize(9).setFontColor('#555')
         .setBackground(bg).setVerticalAlignment('middle').setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
-        .setBorder(true, true, true, true, true, true, '#e0e0e0', BS)
+        .setBorder(true, true, true, true, true, true, _UI.border, BS)
 
       sh.getRange(row, 5).setValue(col.auto)
-        .setFontFamily('Calibri').setFontSize(9).setFontStyle('italic')
-        .setFontColor('#1565c0').setBackground(bg).setVerticalAlignment('middle')
+        .setFontFamily(_UI.font).setFontSize(9).setFontStyle('italic')
+        .setFontColor(_UI.accent).setBackground(bg).setVerticalAlignment('middle')
         .setHorizontalAlignment('center')
-        .setBorder(true, true, true, true, true, true, '#e0e0e0', BS)
+        .setBorder(true, true, true, true, true, true, _UI.border, BS)
 
       sh.setRowHeight(row, 20)
       row++
@@ -1102,7 +1423,7 @@ function crearInstrucciones() {
 
   sh.getRange(row, 1, 1, 5).merge()
   sh.getRange(row, 1).setValue('Los colores de cada sección coinciden con los de la fila de encabezados en Pacientes. Tooltips disponibles al pasar el mouse sobre fila 3.')
-    .setFontFamily('Calibri').setFontSize(10).setFontColor('#757575').setBackground('#f5f5f5')
+    .setFontFamily(_UI.font).setFontSize(10).setFontColor('#757575').setBackground('#F1F5F9')
     .setVerticalAlignment('middle').setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
   sh.setRowHeight(row, 24)
 
@@ -1124,7 +1445,7 @@ function crearDashboard() {
   if (old) ss.deleteSheet(old)
 
   var sh = ss.insertSheet('Dashboard')
-  sh.setTabColor('#86A287')
+  sh.setTabColor(_UI.tabBW)
   sh.setHiddenGridlines(true)
 
   var P = "'" + HOJA_PAC + "'!"
@@ -1132,13 +1453,13 @@ function crearDashboard() {
   var SEP = getFormulaSep()
   var BS = SpreadsheetApp.BorderStyle.SOLID
   var BSM = SpreadsheetApp.BorderStyle.SOLID_MEDIUM
-  var GREEN = '#1b5e20', GREEN_L = '#e8f5e9', GREEN_M = '#2e7d5b'
+  var GREEN = _UI.hdrBg, GREEN_L = '#EEF2F7', GREEN_M = _UI.accent2
   var W = '#ffffff', T = '#212121', TG = '#757575'
   var SEXO = colToLetter(7), EDAD = colToLetter(10)
   var PRIO = colToLetter(COL.PRIORIDAD), DEP = colToLetter(26)
-  var EMPC = colToLetter(22), EMPU = colToLetter(65)
+  var EMPC = colToLetter(22), EMPU = colToLetter(66)
 
-  var CARD_BORDER = '#4caf50'
+  var CARD_BORDER = _UI.accentL
 
   sh.setColumnWidth(1, 240)
   for (var _ci = 2; _ci <= 8; _ci++) sh.setColumnWidth(_ci, 130)
@@ -1148,7 +1469,7 @@ function crearDashboard() {
 
   function sec(t, r) {
     sh.getRange(r, 1, 1, 9).merge()
-    sh.getRange(r, 1).setValue(t).setFontFamily('Calibri').setFontSize(13).setFontWeight('bold')
+    sh.getRange(r, 1).setValue(t).setFontFamily(_UI.font).setFontSize(13).setFontWeight('bold')
       .setFontColor(W).setBackground(GREEN).setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, W, BSM)
     sh.setRowHeight(r, 30)
@@ -1157,14 +1478,14 @@ function crearDashboard() {
   }
   function cardLabel(r, c, w, t, fc) {
     sh.getRange(r, c, 1, w).merge()
-      .setValue(t).setFontFamily('Calibri').setFontSize(10).setFontWeight('bold')
-      .setFontColor(fc || T).setBackground('#f9fafb').setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setValue(t).setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold')
+      .setFontColor(fc || T).setBackground(_UI.chipCard).setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, false, true, true, false, CARD_BORDER, BS)
   }
   function cardVal(r, c, w, f, fc) {
     if (f) sh.getRange(r, c).setFormula(f)
     var rng = sh.getRange(r, c, 1, w).merge()
-    rng.setFontFamily('Calibri').setFontSize(22).setFontWeight('bold')
+    rng.setFontFamily(_UI.font).setFontSize(22).setFontWeight('bold')
       .setFontColor(fc || GREEN).setBackground(W).setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(false, true, true, true, true, true, CARD_BORDER, BS)
   }
@@ -1176,14 +1497,14 @@ function crearDashboard() {
   var R = 1
   sh.getRange(R, 1, 1, 9).merge()
   sh.getRange(R, 1).setValue('SISTEMA PADDS — DASHBOARD')
-    .setFontFamily('Calibri').setFontSize(22).setFontWeight('bold')
+    .setFontFamily(_UI.font).setFontSize(22).setFontWeight('bold')
     .setFontColor(W).setBackground(GREEN).setHorizontalAlignment('center').setVerticalAlignment('middle')
   sh.setRowHeight(R, 52)
-  sh.getRange(R, 1).setBorder(true, true, true, true, true, true, '#0d3b14', BSM)
+  sh.getRange(R, 1).setBorder(true, true, true, true, true, true, '#1E293B', BSM)
   R++
   sh.getRange(R, 1, 1, 9).merge()
   sh.getRange(R, 1).setFormula('="Actualizado: "&TEXT(NOW()' + SEP + '"dd/MM/yyyy HH:mm")&"  •  Datos en vivo desde la hoja ' + HOJA_PAC + '"')
-    .setFontFamily('Calibri').setFontSize(9).setFontStyle('italic').setFontColor('#e8f5e9')
+    .setFontFamily(_UI.font).setFontSize(9).setFontStyle('italic').setFontColor('#ffffff')
     .setBackground(GREEN_M).setHorizontalAlignment('center').setVerticalAlignment('middle')
     .setBorder(false, true, true, true, true, true, W, BS)
   sh.setRowHeight(R, 24)
@@ -1193,23 +1514,39 @@ function crearDashboard() {
   var RC = R
   var resumen = [
     [1, 2, 'Total Pacientes', '=COUNTA(' + P + 'C4:C)', GREEN],
-    [3, 2, 'Vigentes',        cf(P + 'F4:F', 'VIGENTE'), '#2e7d32'],
-    [5, 2, 'Fallecidos',      cf(P + 'F4:F', 'FALLECIDO'), '#c62828'],
-    [7, 2, 'Egresados',       cf(P + 'F4:F', 'EGRESO*'), '#e65100'],
+    [3, 2, 'Vigentes',        cf(P + 'F4:F', 'VIGENTE'), '#15803D'],
+    [5, 2, 'Fallecidos',      cf(P + 'F4:F', 'FALLECIDO'), '#B91C1C'],
+    [7, 2, 'Egresados',       cf(P + 'F4:F', 'EGRESO*'), '#C2410C'],
   ]
   resumen.forEach(function(x) { cardLabel(RC, x[0], x[1], x[2], x[3]); cardVal(RC + 1, x[0], x[1], x[3], x[3]) })
   sh.setRowHeight(RC, 22); sh.setRowHeight(RC + 1, 48)
   var _totalValCell = colToLetter(1) + (RC + 1)
   R = RC + 4
 
+  sec('PACIENTES ONCOLOGICOS  —  prevalencia', R); R += 2
+  var RO = R
+  var oncRng = P + colToLetter(COL.ONCOLOGICO) + '4:' + colToLetter(COL.ONCOLOGICO)
+  var oncTotalF = 'COUNTIF(' + oncRng + SEP + '"SI")'
+  var oncol = [
+    [1, 2, 'Oncológicos (SI)', '=' + oncTotalF, '#0369A1'],
+    [3, 2, 'Hombres',          '=COUNTIFS(' + oncRng + SEP + '"SI"' + SEP + P + SEXO + '4:' + SEXO + SEP + '"M")', '#0F766E'],
+    [5, 2, 'Mujeres',          '=COUNTIFS(' + oncRng + SEP + '"SI"' + SEP + P + SEXO + '4:' + SEXO + SEP + '"F")', '#C2410C'],
+    [7, 2, '% del total',      '=IFERROR(' + colToLetter(1) + (RO + 1) + '/' + _totalValCell + SEP + '0)', '#7E22CE'],
+  ]
+  oncol.forEach(function(x) { cardLabel(RO, x[0], x[1], x[2], x[4]); cardVal(RO + 1, x[0], x[1], x[3], x[4]) })
+  sh.getRange(RO + 1, 7, 1, 2).setNumberFormat('0%')
+  sh.getRange(RO + 1, 7, 1, 2).setNote('Porcentaje de pacientes oncológicos sobre el total de pacientes.')
+  sh.setRowHeight(RO, 20); sh.setRowHeight(RO + 1, 44)
+  R = RO + 4
+
   sec('DEMOGRAFIA  —  edad y sexo', R); R += 2
   var RC = R
   var demo = [
-    [1, 2, 'Hombres',            cf(P + SEXO + '4:' + SEXO, 'M'), '#1565c0'],
-    [3, 2, 'Mujeres',            cf(P + SEXO + '4:' + SEXO, 'F'), '#c62828'],
-    [5, 2, 'Edad Pendiente',     '=IFERROR(' + _totalValCell + '-COUNTIF(' + P + EDAD + '4:' + EDAD + SEP + '">0")' + SEP + '0)', '#e65100'],
+    [1, 2, 'Hombres',            cf(P + SEXO + '4:' + SEXO, 'M'), '#0369A1'],
+    [3, 2, 'Mujeres',            cf(P + SEXO + '4:' + SEXO, 'F'), '#B91C1C'],
+    [5, 2, 'Edad Pendiente',     '=IFERROR(' + _totalValCell + '-COUNTIF(' + P + EDAD + '4:' + EDAD + SEP + '">0")' + SEP + '0)', '#C2410C'],
     [7, 2, 'Edad Promedio',      '=ROUND(AVERAGE(' + P + EDAD + '4:' + EDAD + ')' + SEP + ' 0)', GREEN],
-    [9, 1, 'Electrodependiente', cf(P + colToLetter(31) + '4:' + colToLetter(31), 'TRUE'), '#6a1b9a'],
+    [9, 1, 'Electrodependiente', cf(P + colToLetter(31) + '4:' + colToLetter(31), 'TRUE'), '#7E22CE'],
   ]
   demo.forEach(function(x) { cardLabel(RC, x[0], x[1], x[2], x[4]); cardVal(RC + 1, x[0], x[1], x[3], x[4]) })
   sh.setRowHeight(RC, 22); sh.setRowHeight(RC + 1, 44)
@@ -1238,10 +1575,10 @@ function crearDashboard() {
   sec('PRIORIDAD GENERAL', R); R += 2
   var RP = R
   var prio = [
-    ['URGENTE',     cf(P + PRIO + '4:' + PRIO, 'URGENTE'),     '#c62828', '#ffebee'],
-    ['POR REVISAR', cf(P + PRIO + '4:' + PRIO, 'POR REVISAR'), '#e65100', '#fff3e0'],
-    ['AL DIA',      cf(P + PRIO + '4:' + PRIO, 'AL DIA'),      '#2e7d32', '#e8f5e9'],
-    ['N/A',          cf(P + PRIO + '4:' + PRIO, 'N/A'),         TG,        '#f5f5f5'],
+    ['URGENTE',     cf(P + PRIO + '4:' + PRIO, 'URGENTE'),     '#B91C1C', '#FEE2E2'],
+    ['POR REVISAR', cf(P + PRIO + '4:' + PRIO, 'POR REVISAR'), '#C2410C', '#FFEDD5'],
+    ['AL DIA',      cf(P + PRIO + '4:' + PRIO, 'AL DIA'),      '#15803D', '#DCFCE7'],
+    ['N/A',          cf(P + PRIO + '4:' + PRIO, 'N/A'),         TG,        '#F1F5F9'],
   ]
   prio.forEach(function(x, i) {
     var c = 1 + i * 2
@@ -1253,10 +1590,10 @@ function crearDashboard() {
   sec('SECTOR  —  distribucion geografica', R); R += 2
   var RS = R
   var sect = [
-    ['VERDE',     cf(P + 'B4:B', 'VERDE'),     '#2e7d32', '#e8f5e9'],
-    ['AMARILLO',  cf(P + 'B4:B', 'AMARILLO'),  '#f9a825', '#fffde7'],
-    ['NARANJO',   cf(P + 'B4:B', 'NARANJO'),   '#e65100', '#fff3e0'],
-    ['PENDIENTE', cf(P + 'B4:B', 'PENDIENTE'), TG,        '#f5f5f5'],
+    ['VERDE',     cf(P + 'B4:B', 'VERDE'),     '#15803D', '#DCFCE7'],
+    ['AMARILLO',  cf(P + 'B4:B', 'AMARILLO'),  '#B45309', '#FEF3C7'],
+    ['NARANJO',   cf(P + 'B4:B', 'NARANJO'),   '#C2410C', '#FFEDD5'],
+    ['PENDIENTE', cf(P + 'B4:B', 'PENDIENTE'), TG,        '#F1F5F9'],
   ]
   sect.forEach(function(x, i) {
     var c = 1 + i * 2
@@ -1268,10 +1605,10 @@ function crearDashboard() {
   sec('DEPENDENCIA  —  clasificacion funcional', R); R += 2
   var RD = R
   var dlist = [
-    ['SEVERO',        cf(P + DEP + '4:' + DEP, 'SEVERO'),        '#c62828', '#ffebee'],
-    ['MODERADO',      cf(P + DEP + '4:' + DEP, 'MODERADO'),      '#e65100', '#fff3e0'],
-    ['LEVE',          cf(P + DEP + '4:' + DEP, 'LEVE'),          '#f9a825', '#fffde7'],
-    ['INDEPENDIENTE', cf(P + DEP + '4:' + DEP, 'INDEPENDIENTE'), '#2e7d32', '#e8f5e9'],
+    ['SEVERO',        cf(P + DEP + '4:' + DEP, 'SEVERO'),        '#B91C1C', '#FEE2E2'],
+    ['MODERADO',      cf(P + DEP + '4:' + DEP, 'MODERADO'),      '#C2410C', '#FFEDD5'],
+    ['LEVE',          cf(P + DEP + '4:' + DEP, 'LEVE'),          '#B45309', '#FEF3C7'],
+    ['INDEPENDIENTE', cf(P + DEP + '4:' + DEP, 'INDEPENDIENTE'), '#15803D', '#DCFCE7'],
   ]
   dlist.forEach(function(x, i) {
     var c = 1 + i * 2
@@ -1283,10 +1620,10 @@ function crearDashboard() {
   sec('COBERTURA EMPA / EMPAM', R); R += 2
   var RE = R
   var empa = [
-    [1, 2, 'Cuidador EMPA',  cf(P + EMPC + '4:' + EMPC, 'EMPA'),  '#1565c0'],
-    [3, 2, 'Cuidador EMPAM', cf(P + EMPC + '4:' + EMPC, 'EMPAM'), '#6a1b9a'],
-    [5, 2, 'Usuario EMPA',   cf(P + EMPU + '4:' + EMPU, 'EMPA'),  '#1565c0'],
-    [7, 2, 'Usuario EMPAM',  cf(P + EMPU + '4:' + EMPU, 'EMPAM'), '#6a1b9a'],
+    [1, 2, 'Cuidador EMPA',  cf(P + EMPC + '4:' + EMPC, 'EMPA'),  '#0369A1'],
+    [3, 2, 'Cuidador EMPAM', cf(P + EMPC + '4:' + EMPC, 'EMPAM'), '#7E22CE'],
+    [5, 2, 'Usuario EMPA',   cf(P + EMPU + '4:' + EMPU, 'EMPA'),  '#0369A1'],
+    [7, 2, 'Usuario EMPAM',  cf(P + EMPU + '4:' + EMPU, 'EMPAM'), '#7E22CE'],
   ]
   empa.forEach(function(x) { cardLabel(RE, x[0], x[1], x[2], x[4]); cardVal(RE + 1, x[0], x[1], x[3], x[4]) })
   sh.setRowHeight(RE, 20); sh.setRowHeight(RE + 1, 44)
@@ -1297,7 +1634,7 @@ function crearDashboard() {
   var vacHeaders = ['Vacuna', 'Vacunados', 'Faltante', '%', 'P (prog.)', 'NO / N/A']
   for (var _vhi = 0; _vhi < vacHeaders.length; _vhi++) {
     sh.getRange(vacRow, _vhi + 1).setValue(vacHeaders[_vhi])
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold')
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold')
       .setFontColor(W).setBackground(GREEN).setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, GREEN, BS)
   }
@@ -1313,29 +1650,29 @@ function crearDashboard() {
   for (var va = 0; va < vacas.length; va++) {
     var vrow = vacRow + 1 + va
     var vcl = colToLetter(vacas[va][1])
-    var vbg = va % 2 === 0 ? W : '#f5faf5'
+    var vbg = va % 2 === 0 ? W : '#F0FDFA'
     var vr = P + vcl + '4:' + vcl
     var vf = 'COUNTIF(' + vr + SEP + '">0")+COUNTIF(' + vr + SEP + '"SI")+COUNTIF(' + vr + SEP + '"R")'
     sh.getRange(vrow, 1).setValue(vacas[va][0])
-      .setFontFamily('Calibri').setFontSize(10).setFontColor(T).setBackground(vbg).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontColor(T).setBackground(vbg).setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(vrow, 2).setFormula('=' + vf)
-      .setFontFamily('Calibri').setFontSize(10).setFontColor(GREEN).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontColor(GREEN).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(vrow, 3).setFormula('=' + _totalValCell + '-(' + vf + ')')
       .setNumberFormat('0')
-      .setFontFamily('Calibri').setFontSize(10).setFontColor(TG).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontColor(TG).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(vrow, 4).setFormula('=IFERROR((' + vf + ')/' + _totalValCell + SEP + '0)')
       .setNumberFormat('0%')
-      .setFontFamily('Calibri').setFontSize(10).setFontWeight('bold').setFontColor(GREEN).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold').setFontColor(GREEN).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(vrow, 5).setFormula('=COUNTIF(' + vr + SEP + '"P")')
-      .setFontFamily('Calibri').setFontSize(10).setFontColor('#e65100').setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontColor('#C2410C').setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(vrow, 6).setFormula('=COUNTIF(' + vr + SEP + '"NO")+COUNTIF(' + vr + SEP + '"N/A")')
-      .setFontFamily('Calibri').setFontSize(10).setFontColor(TG).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontColor(TG).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.setRowHeight(vrow, 22)
   }
   R = vacRow + 1 + vacas.length + 2
@@ -1347,7 +1684,7 @@ function crearDashboard() {
   var pathHeaders = ['Patologia', 'Pacientes', 'Faltante', '%']
   for (var _phi = 0; _phi < pathHeaders.length; _phi++) {
     sh.getRange(pathRow, _phi + 1).setValue(pathHeaders[_phi])
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold')
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold')
       .setFontColor(W).setBackground(GREEN).setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, GREEN, BS)
   }
@@ -1359,36 +1696,36 @@ function crearDashboard() {
     var cn = 32 + p
     var cl = colToLetter(cn)
     var nm = String(pHeaders[p] || '').trim() || 'Patologia ' + cn
-    var bg = p % 2 === 0 ? W : '#f5faf5'
+    var bg = p % 2 === 0 ? W : '#F0FDFA'
 
     var countFormula = ''
     if (cn === 48) countFormula = 'COUNTA(' + P + cl + '4:' + cl + ')'
     else countFormula = 'COUNTIF(' + P + cl + '4:' + cl + SEP + 'TRUE)'
 
     sh.getRange(pr, 1).setValue(nm)
-      .setFontFamily('Calibri').setFontSize(10).setFontColor(T).setBackground(bg).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontColor(T).setBackground(bg).setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(pr, 2).setFormula('=' + countFormula)
-      .setFontFamily('Calibri').setFontSize(10).setFontColor(GREEN).setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontColor(GREEN).setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(pr, 3).setFormula('=' + _totalValCell + '-(' + countFormula + ')')
       .setNumberFormat('0')
-      .setFontFamily('Calibri').setFontSize(10).setFontColor(TG).setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontColor(TG).setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(pr, 4).setFormula('=IFERROR(' + countFormula + '/' + _totalValCell + SEP + '0)')
       .setNumberFormat('0%')
-      .setFontFamily('Calibri').setFontSize(10).setFontWeight('bold').setFontColor(GREEN).setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold').setFontColor(GREEN).setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.setRowHeight(pr, 22)
   }
   R = pathRow + 1 + pHeaders.length + 2
 
   sec('VIGENCIAS POR AREA', R); R += 2
   var vigHeaders = ['Control / Area', 'AL DIA', 'POR\nVENCER', 'VENCIDO', 'PENDTE', 'N/A', 'TOTAL', '% AL DIA', 'BARRAS']
-  var vigBgs = [GREEN, '#2e7d32', '#e65100', '#c62828', '#f9a825', TG, GREEN, '#2e7d32', '#37474f']
+  var vigBgs = [GREEN, '#15803D', '#C2410C', '#B91C1C', '#B45309', TG, GREEN, '#15803D', '#1E293B']
   vigHeaders.forEach(function(h, i) {
     sh.getRange(R, i + 1).setValue(h)
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold')
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold')
       .setFontColor(W).setBackground(vigBgs[i] || GREEN_M).setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, GREEN, BS)
   })
@@ -1401,28 +1738,28 @@ function crearDashboard() {
     if (fc > lc) continue
     var vr = R + vigRows
     var nm2 = def[0]
-    var bg2 = vigRows % 2 === 0 ? '#fafafa' : '#f0f8f0'
+    var bg2 = vigRows % 2 === 0 ? '#FFFFFF' : '#F0FDFA'
     var mesesM = _mesesControl(_paramsDash, def[2])
 
     sh.getRange(vr, 1).setValue(nm2)
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold').setFontColor(T).setBackground(bg2).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor(T).setBackground(bg2).setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
 
     sh.getRange(vr, 2, 1, 5).setValues([[0, 0, 0, 0, 0]])
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold').setFontColor(T).setBackground(bg2)
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor(T).setBackground(bg2)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(vr, 7).setFormula('=SUM(B' + vr + ':F' + vr + ')')
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold').setFontColor(GREEN).setBackground(bg2)
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor(GREEN).setBackground(bg2)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(vr, 8).setFormula('=IF(G' + vr + '=0' + SEP + ' ""' + SEP + ' ROUND(B' + vr + '/G' + vr + '*100' + SEP + ' 0))')
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold').setFontColor('#2e7d32').setBackground(bg2)
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor('#15803D').setBackground(bg2)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(vr, 9).setFormula('=SPARKLINE(B' + vr + ':F' + vr + ')')
       .setBackground(bg2).setVerticalAlignment('middle').setHorizontalAlignment('center')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.setRowHeight(vr, 22)
     vigRows++
   }
@@ -1431,22 +1768,22 @@ function crearDashboard() {
   sec('ALERTAS RESUMEN', R); R += 2
   var ar = R
   var alertas = [
-    ['VENCIDOS',   '0', '#c62828', '#ffebee'],
-    ['POR VENCER', '0', '#e65100', '#fff3e0'],
+    ['VENCIDOS',   '0', '#B91C1C', '#FEE2E2'],
+    ['POR VENCER', '0', '#C2410C', '#FFEDD5'],
     ['PENDIENTES', _CONTROL_FECHAS.filter(function(d) { return d[1] <= lc }).map(function(d) {
       return 'SUMPRODUCT(--(LEN(TRIM(' + P + colToLetter(d[1]) + '4:' + colToLetter(d[1]) + '))=0))'
-    }).join('+'), '#f9a825', '#fffde7'],
+    }).join('+'), '#B45309', '#FEF3C7'],
   ]
   alertas.forEach(function(x, i) {
     var ac = 1 + i * 3
     sh.getRange(ar, ac, 1, 3).merge()
     sh.getRange(ar, ac).setValue(x[0])
-      .setFontFamily('Calibri').setFontSize(13).setFontWeight('bold')
+      .setFontFamily(_UI.font).setFontSize(13).setFontWeight('bold')
       .setFontColor(x[2]).setBackground(x[3]).setVerticalAlignment('middle').setHorizontalAlignment('center')
       .setBorder(true, true, true, true, true, true, x[2], BS)
     sh.getRange(ar + 1, ac, 1, 3).merge()
     sh.getRange(ar + 1, ac).setFormula('=' + x[1])
-      .setFontFamily('Calibri').setFontSize(26).setFontWeight('bold')
+      .setFontFamily(_UI.font).setFontSize(26).setFontWeight('bold')
       .setFontColor(x[2]).setBackground(W).setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, x[2], BS)
     sh.setRowHeight(ar, 24)
@@ -1469,28 +1806,28 @@ function crearDashboard() {
   ])
 
   var _tinte = {
-    VERDE: '#2e7d32', AMARILLO: '#f9a825', NARANJO: '#e65100', PENDIENTE: '#999999',
-    M: '#1565c0', F: '#c62828',
+  VERDE: '#15803D', AMARILLO: '#B45309', NARANJO: '#C2410C', PENDIENTE: '#64748B',
+  M: '#0369A1', F: '#BE185D',
   }
   function miniTabla(tbl, col) {
     for (var tr = 0; tr < tbl.length; tr++) {
       var rr = gT + tr
       var esHdr = tr === 0
-      var bg = esHdr ? GREEN : (tr % 2 === 0 ? W : '#f5faf5')
+      var bg = esHdr ? GREEN : (tr % 2 === 0 ? W : '#F0FDFA')
       var lb = tbl[tr][0]
       var fc = esHdr ? W : (_tinte[lb] || T)
       sh.getRange(rr, col).setValue(lb)
-        .setFontFamily('Calibri').setFontSize(esHdr ? 9 : 10).setFontWeight('bold')
+        .setFontFamily(_UI.font).setFontSize(esHdr ? 9 : 10).setFontWeight('bold')
         .setFontColor(fc).setBackground(esHdr ? GREEN : (_tinte[lb] ? '#ffffff' : bg))
         .setHorizontalAlignment('center').setVerticalAlignment('middle')
-        .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+        .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
       var c2 = sh.getRange(rr, col + 1)
       if (esHdr) c2.setValue('N')
       else c2.setFormula(tbl[tr][1])
-      c2.setFontFamily('Calibri').setFontSize(esHdr ? 9 : 10).setFontWeight('bold')
+      c2.setFontFamily(_UI.font).setFontSize(esHdr ? 9 : 10).setFontWeight('bold')
         .setFontColor(esHdr ? W : GREEN).setBackground(bg)
         .setHorizontalAlignment('center').setVerticalAlignment('middle')
-        .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+        .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
       sh.setRowHeight(rr, esHdr ? 18 : 20)
     }
   }
@@ -1500,20 +1837,20 @@ function crearDashboard() {
   var gA = gT + Math.max(gs.length, gx.length) + 2
   var nChart = 0
   if (_insertarGrafico(sh, Charts.ChartType.COLUMN, sh.getRange(gT, 1, gs.length, 2), gA, 1, 320, 250,
-      { title: 'Distribución por SECTOR', colors: ['#2e7d32'] })) nChart++
+      { title: 'Distribución por SECTOR', colors: ['#15803D'] })) nChart++
   if (_insertarGrafico(sh, Charts.ChartType.PIE, sh.getRange(gT, 4, gx.length, 2), gA, 6, 320, 250,
-      { pieHole: 0.45, title: 'Sexo', colors: ['#1565c0', '#c62828'] })) nChart++
+      { pieHole: 0.45, title: 'Sexo', colors: ['#0369A1', '#B91C1C'] })) nChart++
   if (!nChart) ss.toast('No se pudieron insertar los gráficos (revisa permisos)', 'Dashboard', 6)
   R = gA + 14
 
   sh.getRange(R, 1, 1, 9).merge()
   sh.getRange(R, 1).setValue('Leyenda de clasificacion de controles')
-    .setFontFamily('Calibri').setFontSize(12).setFontWeight('bold').setFontColor(W).setBackground('#37474f')
+    .setFontFamily(_UI.font).setFontSize(12).setFontWeight('bold').setFontColor(W).setBackground(_UI.hdrBg)
     .setHorizontalAlignment('center').setVerticalAlignment('middle')
     .setBorder(true, true, true, true, true, true, W, BSM)
   sh.setRowHeight(R, 28)
   R += 2
-  var _leyColors = { bg: ['#e8f5e9', '#fff8e1', '#ffebee', '#fff9c4', '#f5f5f5'], fg: ['#2e7d32', '#e65100', '#c62828', '#f9a825', TG] }
+  var _leyColors = { bg: ['#DCFCE7', '#FEF3C7', '#FEE2E2', '#FEF3C7', '#F1F5F9'], fg: ['#15803D', '#C2410C', '#B91C1C', '#B45309', TG] }
   var stLbl = [
     ['AL DIA',       'Fecha dentro del plazo configurado en Parametros (color verde en la celda)'],
     ['POR VENCER',   'Proximo a vencer — segun DIAS_AVISO en Parametros (color ambar)'],
@@ -1524,18 +1861,18 @@ function crearDashboard() {
   for (var _li = 0; _li < stLbl.length; _li++) {
     var s = stLbl[_li]
     sh.getRange(R + _li, 1).setValue(s[0])
-      .setFontFamily('Calibri').setFontSize(10).setFontWeight('bold')
+      .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold')
       .setFontColor(_leyColors.fg[_li]).setBackground(_leyColors.bg[_li]).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.getRange(R + _li, 2, 1, 8).merge().setValue(s[1])
-      .setFontFamily('Calibri').setFontSize(10).setFontColor('#333').setBackground(_leyColors.bg[_li])
-      .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(10).setFontColor('#333').setBackground(_leyColors.bg[_li])
+      .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.setRowHeight(R + _li, 22)
   }
   R += stLbl.length + 2
 
   sh.getRange(R, 1).setValue('Controles por fecha unica (el color de la celda indica la vigencia):')
-    .setFontFamily('Calibri').setFontSize(10).setFontWeight('bold').setFontColor(W).setBackground('#455a64')
+    .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold').setFontColor(W).setBackground('#334155')
     .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, GREEN, BS)
   sh.getRange(R, 2, 1, 8).merge()
   sh.setRowHeight(R, 24)
@@ -1544,21 +1881,21 @@ function crearDashboard() {
     var c = _CONTROL_FECHAS[_ai2]
     var bgA2 = _ai2 % 2 === 0 ? '#f5f7fa' : '#eef1f5'
     sh.getRange(R + _ai2, 1).setValue(c[0])
-      .setFontFamily('Calibri').setFontSize(9).setFontColor(T).setBackground(bgA2).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setFontFamily(_UI.font).setFontSize(9).setFontColor(T).setBackground(bgA2).setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     var clF = colToLetter(c[1])
     sh.getRange(R + _ai2, 2, 1, 8).merge().setValue('Fecha: columna ' + clF + '  →  vigencia por color')
       .setFontFamily('Consolas,monospace').setFontSize(9).setFontColor('#555').setBackground(bgA2)
-      .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+      .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
     sh.setRowHeight(R + _ai2, 20)
   }
   R += _CONTROL_FECHAS.length + 2
 
   sh.getRange(R, 1, 1, 9).merge()
   sh.getRange(R, 1).setValue('Prioridad General (col ' + COL.PRIORIDAD + '): VENCIDO → URGENTE | POR VENCER → POR REVISAR | AL DIA → AL DIA | sin datos → N/A')
-    .setFontFamily('Calibri').setFontSize(9).setFontStyle('italic').setFontColor('#555').setBackground('#f5f5f5')
+    .setFontFamily(_UI.font).setFontSize(9).setFontStyle('italic').setFontColor('#555').setBackground('#F1F5F9')
     .setVerticalAlignment('middle').setHorizontalAlignment('center')
-    .setBorder(true, true, true, true, true, true, '#c8e6c9', BS)
+    .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
   sh.setRowHeight(R, 24)
   R++
 
@@ -1578,7 +1915,7 @@ function _insertarGrafico(sh, tipo, rng, fila, col, w, h, opts) {
       .addRange(rng)
       .setPosition(fila, col, 0, 0)
       .setOption('width', w).setOption('height', h)
-      .setOption('fontName', 'Calibri')
+      .setOption('fontName', _UI.font)
       .setOption('chartArea', { width: '78%', height: '72%' })
       .setOption('legend', { position: 'right', textStyle: { fontSize: 10 } })
       .setOption('titleTextStyle', { fontSize: 12, bold: true })
@@ -1665,9 +2002,9 @@ function actualizarDashboard() {
     sh.getRange(secAl + 5, 1, 1, 9).merge()
     sh.getRange(secAl + 5, 1)
       .setValue('Con ≥1 control VENCIDO: ' + conV + '   ·   Con ≥1 POR VENCER: ' + conPv + '   ·   Sin ningún control registrado: ' + sinCtrl + '   (' + data.length + ' pacientes)')
-      .setFontFamily('Calibri').setFontSize(9).setFontWeight('bold').setFontColor('#6d4c00')
-      .setBackground('#fff8e1').setVerticalAlignment('middle').setHorizontalAlignment('center')
-      .setBorder(true, true, true, true, true, true, '#ffd54f', BS)
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor('#92400E')
+      .setBackground('#FEF3C7').setVerticalAlignment('middle').setHorizontalAlignment('center')
+      .setBorder(true, true, true, true, true, true, '#FCD34D', BS)
     sh.setRowHeight(secAl + 5, 22)
   }
 
@@ -1717,7 +2054,7 @@ function configurarResaltadoFila() {
       var formula = '=AND(ROW()>=4, ROW()=INDIRECT("_Resalte!B1"), INDIRECT("_Resalte!A1")="' + sheets[si] + '")'
       var rule = SpreadsheetApp.newConditionalFormatRule()
         .whenFormulaSatisfied(formula)
-        .setBackground('#E8F0FE')
+        .setBackground('#CCFBF1')
         .setRanges([range])
         .build()
       keep.push(rule)
@@ -1727,4 +2064,3 @@ function configurarResaltadoFila() {
     try { ss.toast('Error al configurar resaltado: ' + e.message, 'PADDS', 5) } catch(e5) {}
   }
 }
-

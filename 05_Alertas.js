@@ -13,7 +13,7 @@ function mostrarAlertas() {
   var lr = sh.getLastRow()
   if (lr < 4) { ss.toast('Sin datos de pacientes para generar alertas', 'Alertas', 2); return }
 
-  var cols = [2, 3, 4, 5, 6, 8, 109]
+  var cols = [2, 3, 4, 5, 6, 8, 110]
   var lc = sh.getLastColumn()
   for (var c = 0; c < _CONTROL_FECHAS.length; c++) {
     if (_CONTROL_FECHAS[c][1] <= lc) cols.push(_CONTROL_FECHAS[c][1])
@@ -47,8 +47,8 @@ function mostrarAlertas() {
     var sector = String(row[idx[2]] || '').trim()
     var urgentFlags = []
     if (sector === 'NARANJO') urgentFlags.push(sector)
-    if (idx[109] !== undefined) {
-      var pg = String(row[idx[109]] || '').trim()
+    if (idx[110] !== undefined) {
+      var pg = String(row[idx[110]] || '').trim()
       if (pg === 'URGENTE' || pg === 'POR REVISAR') urgentFlags.push(pg)
     }
 
@@ -60,6 +60,7 @@ function mostrarAlertas() {
       if (idx[fc] === undefined) continue
       var fechaRaw = row[idx[fc]]
       var pName = def[2].toUpperCase()
+      if (params['_DESACTIVADO_' + pName]) continue
       var mesesParam = params[pName] || 12
       var status = _estadoFecha(fechaRaw, mesesParam, diasAviso)
       var fechaOk = fechaRaw instanceof Date && !isNaN(fechaRaw.getTime())
@@ -67,7 +68,7 @@ function mostrarAlertas() {
 
       if (status === 'PENDIENTE') {
         cc.p++
-        pendientes.push({ label: label, fila: fila, control: def[0], razon: 'Sin fecha', tooltip: def[0] + ': sin fecha registrada · Máx ' + mesesParam + ' meses' })
+        pendientes.push({ label: label, fila: fila, control: def[0], razon: 'Sin fecha', tooltip: def[0] + ': sin fecha registrada · Máx ' + _fmtPlazo(params, pName) })
         continue
       }
       if (status === 'N/A') continue
@@ -82,14 +83,14 @@ function mostrarAlertas() {
         if (diffDays >= 365) { var years = Math.floor(diffDays / 365); ago = 'hace ' + years + (years > 1 ? ' años' : ' año') }
         else if (diffDays >= 30) { ago = 'hace ' + diffMonths + (diffMonths > 1 ? ' meses' : ' mes') }
         else { ago = 'hace ' + diffDays + (diffDays > 1 ? ' días' : ' día') }
-        vencidos.push({ label: label, fila: fila, control: def[0], razon: ago, tooltip: 'Último: ' + fechaStr + ' · Máx: ' + mesesParam + ' meses · Excedió por ' + diffMonths + ' meses' })
+        vencidos.push({ label: label, fila: fila, control: def[0], razon: ago, tooltip: 'Último: ' + fechaStr + ' · Máx: ' + _fmtPlazo(params, pName) + ' · Excedió por ' + diffMonths + ' meses' })
       } else if (status === 'POR VENCER') {
         cc.pv++
         var restan = Math.max(0, -diffDays)
         var restanTexto = ''
         if (restan >= 30) { var rm = Math.round(restan / 30.44); restanTexto = 'vence en ' + rm + (rm > 1 ? ' meses' : ' mes') }
         else { restanTexto = 'vence en ' + restan + (restan > 1 ? ' días' : ' día') }
-        porVencer.push({ label: label, fila: fila, control: def[0], razon: restanTexto, tooltip: 'Último: ' + fechaStr + ' · Restan ' + restan + ' días · Aviso: ' + diasAviso + ' días · Máx: ' + mesesParam + ' meses' })
+        porVencer.push({ label: label, fila: fila, control: def[0], razon: restanTexto, tooltip: 'Último: ' + fechaStr + ' · Restan ' + restan + ' días · Aviso: ' + diasAviso + ' días · Máx: ' + _fmtPlazo(params, pName) })
       }
     }
 
@@ -120,24 +121,24 @@ function _showAlertasSidebar(urgentes, vencidos, porVencer, pendientes, params) 
     '.hdr{padding:16px 16px 6px}' +
     '.hdr h2{margin:0;font-size:18px}' +
     '.hdr .sub{font-size:12px;color:#888;margin-top:2px}' +
-    '.info{font-size:11px;color:#777;margin:6px 16px 10px;padding:6px 10px;background:#f8f9fa;border-radius:4px;line-height:1.6}' +
+    '.info{font-size:11px;color:#64748B;margin:6px 16px 10px;padding:6px 10px;background:#F1F5F9;border-radius:4px;line-height:1.6}' +
     '.info i{font-style:normal;padding:1px 5px;border-radius:3px;font-weight:600}' +
-    '.i-r{color:#c62828}.i-o{color:#e65100}.i-y{color:#f57f17}' +
-    'h3{font-size:13px;margin:10px 16px 4px;padding:5px 8px;border-left:3px solid #ccc;font-weight:600;cursor:pointer;user-select:none}' +
+    '.i-r{color:#B91C1C}.i-o{color:#C2410C}.i-y{color:#B45309}' +
+    'h3{font-size:13px;margin:10px 16px 4px;padding:5px 8px;border-left:3px solid #CBD5E1;font-weight:600;cursor:pointer;user-select:none}' +
     'h3:after{content:" \\25BC";font-size:10px;float:right;opacity:.6}' +
     'h3.collapsed:after{content:" \\25B6"}' +
-    '.h-r{border-color:#c62828;color:#b71c1c}' +
-    '.h-o{border-color:#e65100;color:#d84315}' +
-    '.h-y{border-color:#f9a825;color:#f57f17}' +
+    '.h-r{border-color:#B91C1C;color:#B91C1C}' +
+    '.h-o{border-color:#C2410C;color:#C2410C}' +
+    '.h-y{border-color:#B45309;color:#B45309}' +
     'table{width:100%;border-collapse:collapse}' +
-    'td{padding:5px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;line-height:1.4}' +
+    'td{padding:5px 16px;border-bottom:1px solid #F1F5F9;font-size:12px;line-height:1.4}' +
     'td.l{font-weight:600;width:44%}' +
-    'td.l a{color:#222;text-decoration:none;cursor:pointer}' +
-    'td.l a:hover{color:#1565c0;text-decoration:underline}' +
-    'td.c{color:#555;width:28%}' +
-    'td.r{color:#888;width:28%;text-align:right}' +
-    '.vacio{padding:30px 16px;text-align:center;color:#999;font-size:14px}' +
-    '.ftr{font-size:11px;color:#bbb;text-align:center;padding:10px 16px;border-top:1px solid #eee;margin-top:8px}' +
+    'td.l a{color:#1E293B;text-decoration:none;cursor:pointer}' +
+    'td.l a:hover{color:#0F766E;text-decoration:underline}' +
+    'td.c{color:#64748B;width:28%}' +
+    'td.r{color:#94A3B8;width:28%;text-align:right}' +
+    '.vacio{padding:30px 16px;text-align:center;color:#94A3B8;font-size:14px}' +
+    '.ftr{font-size:11px;color:#94A3B8;text-align:center;padding:10px 16px;border-top:1px solid #F1F5F9;margin-top:8px}' +
     '</style>' +
     '<script>' +
     'function irAPaciente(fila){google.script.run._irAPaciente(fila)}' +
@@ -150,7 +151,7 @@ function _showAlertasSidebar(urgentes, vencidos, porVencer, pendientes, params) 
     '<i class="i-r">🔴 Vencido</i> superó meses · ' +
     '<i class="i-o">🟠 Próximo</i> ≤ ' + dias + ' días · ' +
     '<i class="i-y">🟡 Sin fecha</i> nunca registrado · ' +
-    '<i class="i-r">🔴 Prioritario</i> col B (SECTOR) o col 109 (PRIORIDAD)' +
+    '<i class="i-r">🔴 Prioritario</i> col B (SECTOR) o col 110 (PRIORIDAD)' +
     '</div>')
 
   function seccion(hCls, icono, titulo, items, cols, tooltip) {
@@ -174,7 +175,7 @@ function _showAlertasSidebar(urgentes, vencidos, porVencer, pendientes, params) 
   }
 
   seccion('h-r', '🔴', urgentes.length + ' paciente' + (urgentes.length !== 1 ? 's' : '') + ' prioritario' + (urgentes.length !== 1 ? 's' : ''), urgentes, 2,
-    'Paciente marcado Prioridad Naranjo/Urgente (B) o Prioridad General (109) = Urgente/Por Revisar')
+    'Paciente marcado Prioridad Naranjo/Urgente (B) o Prioridad General (110) = Urgente/Por Revisar')
   seccion('h-r', '🔴', vencidos.length + ' vencido' + (vencidos.length !== 1 ? 's' : ''), vencidos, 3,
     'Fecha del último control superó el máximo de meses (ver Parámetros)')
   seccion('h-o', '🟠', porVencer.length + ' próximo' + (porVencer.length !== 1 ? 's' : '') + ' a vencer', porVencer, 3,
@@ -201,4 +202,3 @@ function _irAPaciente(fila) {
     ss.toast('Paciente en la fila ' + fila, 'PADDS', 2)
   }
 }
-

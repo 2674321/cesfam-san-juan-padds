@@ -67,7 +67,7 @@ Google Form(s) → (respuestas) → Google Sheets ("Principal") ← Apps Script 
 
 ## 6. Puesta en marcha de clasp (reemplaza el copiar/pegar manual)
 
-Hasta ahora OpenCode edita los `.gs` en tu PC y tú los pegas a mano en el editor de Apps Script — funciona, pero es lento y propenso a errores de copia. **Esto es lo que faltaba conectar.** `clasp` es la CLI oficial de Google para sincronizar una carpeta local con un proyecto de Apps Script; una vez conectada, el propio agente (que ya tiene permiso de `bash` en `opencode.json`) puede subir los cambios él solo con `clasp push`, tal como pide el punto 5.4 de arriba.
+Hasta ahora OpenCode edita los archivos en tu PC y tú los pegas a mano en el editor de Apps Script — funciona, pero es lento y propenso a errores de copia. **Esto es lo que faltaba conectar.** `clasp` es la CLI oficial de Google para sincronizar una carpeta local con un proyecto de Apps Script; una vez conectada, el propio agente (que ya tiene permiso de `bash` en `opencode.json`) puede subir los cambios él solo con `clasp push`, tal como pide el punto 5.4 de arriba.
 
 **Configuración única**, en la misma carpeta que ya usas con OpenCode y git:
 
@@ -77,13 +77,15 @@ clasp login                                              # autentica con la cuen
 git add -A && git commit -m "checkpoint antes de clasp"  # red de seguridad
 ```
 
-No uses `clasp clone` aquí: como ya tienes `.gs` locales, clonar sobre esa carpeta puede pisarlos o fallar por archivos existentes. En vez de eso, crea el archivo `.clasp.json` a mano en la raíz de la carpeta:
+No uses `clasp clone` aquí: como ya tienes archivos locales (`.js` en esta carpeta, ver nota de reconciliación), clonar sobre esa carpeta puede pisarlos o fallar por archivos existentes. En vez de eso, crea el archivo `.clasp.json` a mano en la raíz de la carpeta:
 
 ```json
 {"scriptId": "TU_SCRIPT_ID", "rootDir": "."}
 ```
 
-(`rootDir` solo aplica si tus `.gs` están en la raíz del repo; si viven en una subcarpeta, ej. `src/`, usa `"rootDir": "src"`.)
+(`rootDir` solo aplica si tus archivos `.js` están en la raíz del repo; si viven en una subcarpeta, ej. `src/`, usa `"rootDir": "src"`.)
+
+**Nota de reconciliación (ago 2026):** el primer `clasp pull` mostró que el remoto iba adelante del local (módulos de backups, insulino, multiselect y pintado de opciones que no existían en los `.gs` locales). Se adoptó el remoto como canónico (archivos `.js`), se eliminaron los `.gs` duplicados (preservados en git, commit "checkpoint antes de clasp") y desde entonces el repo usa `.js`.
 
 Luego verifica que local y remoto realmente coinciden antes de confiar en el flujo automático:
 
@@ -97,7 +99,7 @@ Si `git diff` no muestra nada, todo estaba sincronizado — perfecto. Si muestra
 **A partir de aquí, comandos de referencia:**
 
 ```bash
-clasp push             # sube tus .gs locales al proyecto — esto reemplaza tu copiar/pegar
+clasp push             # sube tus archivos locales (.js para este proyecto) — esto reemplaza tu copiar/pegar
 clasp pull              # trae cambios hechos en el editor web (evítalo si ya no editas ahí)
 clasp push --watch      # sube automáticamente al guardar cada archivo
 clasp open              # abre el proyecto en el editor de Apps Script

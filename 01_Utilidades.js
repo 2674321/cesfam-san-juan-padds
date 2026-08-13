@@ -6,6 +6,27 @@
 
 function _asignarEMPA(edad) { return edad < 20 ? 'N/A' : edad <= 64 ? 'EMPA' : 'EMPAM' }
 
+// Mayúsculas para nombres/apellidos: colapsa espacios y normaliza
+// (convención de la hoja: nombres en MAYÚSCULAS).
+function _mayusNombre(v) {
+  if (v == null) return ''
+  return String(v).trim().replace(/\s+/g, ' ').toUpperCase()
+}
+
+// Texto amigable del plazo configurado en Parámetros ("30 días", "6 meses"
+// o "N/A" si la vigencia está desactivada).
+function _fmtPlazo(params, key) {
+  var k = String(key || '').toUpperCase()
+  if (params && params['_DESACTIVADO_' + k]) return 'N/A'
+  var dias = params && params['_DIAS_' + k]
+  if (dias) return Math.round(Number(dias)) + ' días'
+  var m = params && params[k]
+  if (m === undefined || m === null || isNaN(m)) m = _mesesControl(params, k)
+  if (m === null || m === undefined) return 'N/A'
+  var n = Number(m)
+  return (n === Math.round(n) ? n : Math.round(n * 10) / 10) + ' meses'
+}
+
 function _parseDate(val) {
   if (typeof val === 'object' && val instanceof Date && !isNaN(val.getTime())) return val
   if (typeof val === 'number' && val > 40000) return new Date((val - 25569) * 86400000)
@@ -45,19 +66,32 @@ function _borrarFilasVacias(sh, desdeFila) {
   var total = max - desdeFila + 1
   var vals = sh.getRange(desdeFila, 1, total, lc).getValues()
   var formulas = sh.getRange(desdeFila, 1, total, lc).getFormulas()
-  var vacias = []
-  for (var r = 0; r < total; r++) {
+  var runs = []
+  var ini = -1
+  for (var r = 0; r <= total; r++) {
     var esVacia = true
-    for (var c = 0; c < lc; c++) {
-      if (formulas[r][c] !== '') { esVacia = false; break }
-      var v = vals[r][c]
-      if (v != null && String(v).trim() !== '') { esVacia = false; break }
+    if (r < total) {
+      for (var c = 0; c < lc; c++) {
+        if (formulas[r][c] !== '') { esVacia = false; break }
+        var v = vals[r][c]
+        if (v != null && String(v).trim() !== '') { esVacia = false; break }
+      }
     }
-    if (esVacia) vacias.push(desdeFila + r)
+    if (esVacia) {
+      if (ini < 0) ini = r
+    } else {
+      if (ini >= 0) {
+        runs.push([desdeFila + ini, r - ini])
+        ini = -1
+      }
+    }
   }
-  if (!vacias.length) return 0
-  for (var i = vacias.length - 1; i >= 0; i--) sh.deleteRow(vacias[i])
-  return vacias.length
+  if (!runs.length) return 0
+  var borradas = 0
+  for (var i = runs.length - 1; i >= 0; i--) {
+    try { sh.deleteRows(runs[i][0], runs[i][1]); borradas += runs[i][1] } catch (eD) {}
+  }
+  return borradas
 }
 
 function _normalizarSexo(v) {
@@ -107,13 +141,19 @@ function _normalizarVitalEstado(v) {
 }
 
 function calcStatus(fecha, mesesMax, actual, diasAviso, fechaRaw) {
+  if (mesesMax === null || mesesMax === undefined) return 'N/A'
   if (actual === 'N/A' || actual === 'NA') return 'N/A'
   if (fechaRaw !== undefined && (String(fechaRaw).trim() === 'N/A' || String(fechaRaw).trim() === 'NA')) return 'N/A'
   if (!fecha || typeof fecha !== 'object' || isNaN(fecha.getTime())) return 'PENDIENTE'
   if (diasAviso === undefined || diasAviso === null) diasAviso = 0
   var h = new Date()
-  var fechaVence = new Date(fecha)
-  fechaVence.setMonth(fechaVence.getMonth() + mesesMax)
+  var fechaVence
+  if (mesesMax >= 1 && mesesMax === Math.round(mesesMax)) {
+    fechaVence = new Date(fecha)
+    fechaVence.setMonth(fechaVence.getMonth() + mesesMax)
+  } else {
+    fechaVence = new Date(fecha.getTime() + mesesMax * 30.44 * 86400000)
+  }
   if (h > fechaVence) return 'VENCIDO'
   if (diasAviso > 0) {
     var msRest = fechaVence.getTime() - h.getTime()
@@ -126,7 +166,11 @@ function calcStatus(fecha, mesesMax, actual, diasAviso, fechaRaw) {
 // ─── ESTADO DESDE FECHA ÚNICA ──────────────────────────────────────────────
 
 function _estadoFecha(v, mesesMax, diasAviso) {
-  if (v != null && (String(v).trim() === 'N/A' || String(v).trim() === 'NA')) return 'N/A'
+  if (mesesMax === null || mesesMax === undefined) return 'N/A'
+  if (v != null) {
+    var tE = String(v).trim().toUpperCase()
+    if (tE === 'N/A' || tE === 'NA') return 'N/A'
+  }
   var f = _parseDate(v)
   if (!f) return 'PENDIENTE'
   return calcStatus(f, mesesMax, '', diasAviso, v)
@@ -146,10 +190,26 @@ function formatearRUT(rut) {
   }
 
   if (s.length < 2) return rut
+  // RUN sin guion de 7 dígitos: falta el dígito verificador, no se puede
+  // inventar (formatearRUT('1629792') sería un RUT corrupto '162979-2').
+  if (/^\d{7}$/.test(s)) return s
   var num = s.slice(0, -1).replace(/[^0-9]/g, '')
   var dv = s.slice(-1).toUpperCase().replace(/[^0-9K]/, '')
   if (!num || !dv) return rut
   return num + '-' + dv
+}
+
+// Calcula el dígito verificador de un RUN (solo la parte numérica).
+function _calcularDV(numero) {
+  var suma = 0, factor = 2
+  for (var i = numero.length - 1; i >= 0; i--) {
+    suma += parseInt(numero.charAt(i), 10) * factor
+    factor = factor === 7 ? 2 : factor + 1
+  }
+  var dvCalc = 11 - (suma % 11)
+  if (dvCalc === 11) return '0'
+  if (dvCalc === 10) return 'K'
+  return String(dvCalc)
 }
 
 function _validarDigitoRUT(rut) {
@@ -158,19 +218,17 @@ function _validarDigitoRUT(rut) {
   var s = rut.replace(/\./g, '').replace(/\s/g, '').toUpperCase()
   if (!/^\d{1,8}-[0-9K]$/.test(s)) return false
   var parts = s.split('-')
-  var numeros = parts[0]
-  var dv = parts[1]
+  return parts[1] === _calcularDV(parts[0])
+}
 
-  var suma = 0, factor = 2
-  for (var i = numeros.length - 1; i >= 0; i--) {
-    suma += parseInt(numeros[i], 10) * factor
-    factor = factor === 7 ? 2 : factor + 1
-  }
-  var resto = suma % 11
-  var dvCalc = 11 - resto
-  if (dvCalc === 11) return dv === '0'
-  if (dvCalc === 10) return dv === 'K'
-  return dv === String(dvCalc)
+// Nota (tooltip) para una celda RUN: null si es válido o incompleto; si el
+// dígito verificador no coincide, mensaje con el dígito correcto.
+function _notaRUN(rut) {
+  if (!rut || typeof rut !== 'string') return null
+  var s = rut.replace(/\./g, '').replace(/\s/g, '').toUpperCase()
+  if (!/^\d{1,8}-[0-9K]$/.test(s)) return null
+  if (_validarDigitoRUT(s)) return null
+  return '\u26a0\ufe0f RUN inv\u00e1lido: el d\u00edgito verificador deber\u00eda ser ' + _calcularDV(s.split('-')[0])
 }
 
 function _esc(s) {
@@ -224,6 +282,7 @@ function limpiarBloque(sh, row, col) {
   var merges = rng.getMergedRanges()
   for (var i = 0; i < merges.length; i++) merges[i].breakApart()
   rng.clear()
+  rng.clearDataValidations()
   sh.setRowHeights(row, numR, 21)
 }
 
@@ -275,7 +334,7 @@ function leerParametros() {
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Parámetros')
   if (!sh) return {}
   var lr = sh.getLastRow()
-  var data = lr > 0 ? sh.getRange(1, 1, lr, 2).getValues() : []
+  var data = lr > 0 ? sh.getRange(1, 1, lr, 4).getValues() : []
   var p = {}
   for (var r = 0; r < data.length; r++) {
     var name = String(data[r][0] || '').trim()
@@ -287,7 +346,18 @@ function leerParametros() {
       continue
     }
     var val = Number(data[r][1])
-    if (!isNaN(val) && val > 0) p[key] = val
+    if (isNaN(val) || val <= 0) continue
+    var unidad = String(data[r][2] || '').trim().toUpperCase()
+    if (unidad === 'N/A') {
+      p['_DESACTIVADO_' + key] = true
+      continue
+    }
+    if (unidad === 'DIAS') {
+      p[key] = val / 30.44
+      p['_DIAS_' + key] = val
+    } else {
+      p[key] = val
+    }
   }
   _paramCache = p
   _paramCacheTime = now
@@ -368,15 +438,31 @@ function _fmtCeldaParaComparar(val) {
 function _hojaPacientesValida(ss) {
   var sh = ss.getSheetByName(HOJA_PAC)
   if (!sh) return { ok: false, msg: 'No existe la hoja "' + HOJA_PAC + '".' }
-  if (sh.getMaxColumns() < (typeof _COLUMNAS !== 'undefined' && _COLUMNAS._count ? _COLUMNAS._count : 111)) {
-    return { ok: false, msg: 'La hoja "' + HOJA_PAC + '" no tiene la estructura esperada (' + sh.getMaxColumns() + ' columnas; se esperan 111). Ejecuta 🩺 Pacientes → 🛠️ Mantenimiento de datos → "🎨 Formatear hoja".' }
+  try { _asegurarColumnaInsulino(sh) } catch(e) {}
+  if (sh.getMaxColumns() < 112) {
+    return { ok: false, msg: 'La hoja "' + HOJA_PAC + '" no tiene la estructura esperada (' + sh.getMaxColumns() + ' columnas; se esperan al menos 112). Ejecuta 🩺 Pacientes → 🛠️ Datos → "🎨 Formatear hoja".' }
   }
   return { ok: true, sh: sh }
 }
 
+// Inserta la columna checkbox 'INSULINO DEPENDIENTE' (columna 56) si aún no
+// existe en la hoja. Al insertarla en medio se desplazan las columnas siguientes
+// una posición hacia la derecha conservando los datos. Devuelve true si insertó.
+function _asegurarColumnaInsulino(sh) {
+  if (!sh) return false
+  var n = sh.getMaxColumns()
+  if (n < 55) return false
+  try {
+    var hdr = String(sh.getRange(3, 56).getValue() || '').trim().toUpperCase()
+    if (hdr.indexOf('INSULINO') >= 0) return false
+  } catch(e) { return false }
+  sh.insertColumnAfter(55)
+  try { sh.getRange(3, 56).setValue('INSULINO DEPENDIENTE') } catch(e2) {}
+  return true
+}
+
 // ─── COMPARTIDOS ENTRE ARCHIVOS ─────────────────────────────────────────────
-var _NOTA_RUN_INV = '\u26a0\ufe0f RUN inv\u00e1lido: el d\u00edgito verificador no coincide'
-var _COLS_TEXTO_LIBRE = [3, 4, 5, 11, 12, 16, 20, 48, 50, 62, 63, 75, 97, 99, 110]
+var _COLS_TEXTO_LIBRE = [3, 4, 5, 11, 12, 16, 20, 48, 50, 63, 64, 76, 98, 100, 111]
 var _PRIORIDAD_PMAP = {
   'URGENTE': _ESTADO_FECHA_COLORS['VENCIDO'],
   'POR REVISAR': _ESTADO_FECHA_COLORS['POR VENCER'],
@@ -394,4 +480,3 @@ function _agruparContiguos(cols) {
   }
   return groups
 }
-
