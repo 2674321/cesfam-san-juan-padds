@@ -662,7 +662,11 @@ function _ingresarDesdeLista(row) {
 
   SpreadsheetApp.flush()
 
-  try { _borrarFilasVacias(pac, 4) } catch (eV) {}
+  try {
+    var _nPre = _borrarFilasVacias(pac, 4)
+    _log(ss, 'Pacientes', '_ingresarDesdeLista', 'ok',
+      'fila=' + fila + ' lr=' + lr + ' maxRows=' + pac.getMaxRows() + ' vaciasEliminadas=' + _nPre)
+  } catch (eV) {}
 
   ss.toast('Ingreso confirmado → Pacientes fila ' + fila + ' (ID ' + id + ')', 'INGRESOS', 6)
   return 'enviado'

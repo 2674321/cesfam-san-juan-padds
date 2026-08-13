@@ -608,6 +608,26 @@ function recalcularTodo() {
   ss.toast('Vigencias recalculadas en ' + rows + ' pacientes', 'Pacientes', 4)
 }
 
+// ─── LIMPIAR FILAS VACÍAS AL FINAL (Pacientes) ─────────────────────────────
+// Elimina las filas completamente vacías de la hoja Pacientes (desde la fila 4)
+// para que no queden filas huérfanas acumuladas al final. Nunca borra filas
+// con valores ni fórmulas. Se repite el barrido por si quedaron huecos.
+
+function limpiarFilasVaciasPacientes() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  var sh = ss.getSheetByName(HOJA_PAC)
+  if (!sh) { ss.toast('No se encontró la hoja Pacientes', 'Pacientes', 4); return }
+  var total = 0
+  for (var ronda = 0; ronda < 5; ronda++) {
+    var n = _borrarFilasVacias(sh, 4)
+    total += n
+    if (n === 0) break
+  }
+  ss.toast(total > 0
+    ? 'Se eliminaron ' + total + ' fila(s) vacía(s) de Pacientes'
+    : 'Pacientes está limpio: no había filas vacías al final', 'Pacientes', 4)
+}
+
 function _colorearPrioridad(sh, lr) {
   if (!sh) sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_PAC)
   if (!sh) return
