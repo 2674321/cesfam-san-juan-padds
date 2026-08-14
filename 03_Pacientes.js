@@ -73,21 +73,19 @@ function _pintarTiraPrioridad(sh, row, p) {
 
 function buscarEnPacientes() {
   var html =
-'<html><head><base target="_top"><style>' +
-'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:0;color:#202124;font-size:14px;background:#F1F5F9}' +
+'<html><head><base target="_top"><style>' + _uiCss() + _uiExtCss() +
+'body{padding:0}' +
 '.bar{position:sticky;top:0;background:#fff;padding:12px 12px 8px;border-bottom:1px solid #E2E8F0;z-index:10}' +
 '.bar input{width:100%;box-sizing:border-box;padding:10px 12px;font-size:14px;border:2px solid #CBD5E1;border-radius:8px;outline:none}' +
 '.bar input:focus{border-color:#0F766E}' +
 '.bar .info{font-size:11px;color:#64748B;margin-top:4px;text-align:right}' +
 '#res{overflow-y:auto;padding:6px}' +
 '.it{background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer}' +
-'.it:hover{background:#CCFBF1;border-color:#99F6E4}' +
-'.it .nom{font-size:14px;font-weight:500;color:#1a1a1a;line-height:1.3}' +
+'.it:hover{background:#F0FDFA;border-color:#99F6E4}' +
+'.it .nom{font-size:14px;font-weight:600;color:#1E293B;line-height:1.3}' +
 '.it .det{font-size:12px;color:#64748B;margin-top:2px}' +
 '.it .det span{margin-right:12px}' +
 '.it .rut{font-family:Consolas,monospace;font-size:12px;color:#0F766E}' +
-'.it .tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:500}' +
-'.tag-v{background:#DCFCE7;color:#15803D}.tag-f{background:#FCE7F3;color:#B91C1C}.tag-e{background:#FFEDD5;color:#C2410C}.tag-s{background:#F3E8FF;color:#7E22CE}.tag-p{background:#FEF3C7;color:#B45309}' +
 '.vacio{padding:40px 12px;text-align:center;color:#94A3B8;font-size:13px}' +
 '</style></head><body>' +
 '<div class="bar"><input type="text" id="q" placeholder="Nombre, RUN, apellido..." autofocus>' +
@@ -97,13 +95,13 @@ function buscarEnPacientes() {
 'var inp=document.getElementById("q");var res=document.getElementById("res");var cta=document.getElementById("cta");' +
 'var _t;' +
 'function _e(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}' +
-'function _tag(e){if(e==="FALLECIDO")return"tag-f";if(e==="EGRESO"||e==="EGRESO POR ALTA"||e==="SUSPENDIDO")return"tag-e";if(e==="PENDIENTE")return"tag-p";return"tag-v"}' +
+'function _tag(e){if(e==="FALLECIDO"||e==="SUSPENDIDO")return"chip-neu";if(e==="EGRESO"||e==="EGRESO POR ALTA"||e==="TRASLADO")return"chip-info";if(e==="PENDIENTE")return"chip-warn";return"chip-ok"}' +
 'function _addItem(o){' +
 'var el=document.createElement("div");el.className="it";el.dataset.fila=o.f;' +
 'var n=document.createElement("div");n.className="nom";n.textContent=_e(o.n);el.appendChild(n);' +
 'var d=document.createElement("div");d.className="det";' +
 'var rs=document.createElement("span");rs.className="rut";rs.textContent=_e(o.ru);d.appendChild(rs);' +
-'var ts=document.createElement("span");ts.className="tag "+_tag(o.e);ts.textContent=_e(o.e);d.appendChild(ts);' +
+'var ts=document.createElement("span");ts.className="chip "+_tag(o.e);ts.textContent=_e(o.e);d.appendChild(ts);' +
 'var ss=document.createElement("span");ss.textContent=_e(o.s);d.appendChild(ss);' +
 'el.appendChild(d);res.appendChild(el)' +
 '}' +
@@ -889,7 +887,9 @@ function verificarIntegridadRUN() {
     if (lista.length > max) s += '<div class="row dim">… y ' + (lista.length - max) + ' más</div>'
     return s
   }
-  var html = '<style>' + _uiCss() + '</style><body>' +
+  var html = '<html><head><base target="_top"><style>' + _uiCss() +
+    '.row{padding:2px 0;border-bottom:1px solid #F1F5F9;font-size:12px}.row:last-child{border-bottom:none}' +
+    '</style></head><body>' +
     '<div class="h">🔎 Verificación de RUN</div>' +
     '<div class="sub">Estado de los RUN registrados en Pacientes</div>' +
     '<div class="card"><div class="h err">⚠️ Dígito verificador inválido: ' + invalidos.length + '</div>' +
@@ -1104,32 +1104,32 @@ function _buildFichaSidebarHtml(headers, data, lc, autor, row) {
   p.push('.hdr .nom{font-size:17px;font-weight:700;line-height:1.3}')
   p.push('.hdr .sub{font-size:11px;color:#CBD5E1;margin-top:6px;text-transform:uppercase;letter-spacing:0.8px}')
   p.push('.hdr .sub sp{display:inline-block;margin-right:18px}')
-  p.push('.badge{display:inline-block;padding:2px 10px;border-radius:3px;font-size:11px;font-weight:600;color:#fff}')
+  p.push('.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;color:#fff}')
   p.push('.tag-v{background:#15803D}.tag-f{background:#B91C1C}.tag-e{background:#C2410C}.tag-s{background:#7E22CE}.tag-d{background:#475569}')
-  p.push('.bar-info{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid #e3e8ef;font-size:12px}')
-  p.push('.bar-info .b{background:#f4f6f8;border:1px solid #e3e8ef;border-radius:4px;padding:4px 10px}')
-  p.push('.bar-info .l{color:#8a94a6;font-size:9.5px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}')
+  p.push('.bar-info{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid #E2E8F0;font-size:12px}')
+  p.push('.bar-info .b{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:4px;padding:4px 10px}')
+  p.push('.bar-info .l{color:#64748B;font-size:9.5px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}')
   p.push('table{width:100%;border-collapse:collapse;margin:8px 0;background:#fff}')
   p.push('.sh{font-size:11px;font-weight:700;color:#fff;padding:7px 12px;text-transform:uppercase;letter-spacing:0.6px;border-bottom:2px solid #0F766E}')
-  p.push('td{padding:4px 10px;font-size:12px;border:1px solid #e6eaf0;width:25%}')
-  p.push('td.l{font-weight:600;color:#5a6474;background:#f4f6f8;border-left:2px solid #dfe5ec}')
-  p.push('td.v{color:#212529}')
-  p.push('.vacio{color:#b0b8c4;font-style:italic}')
-  p.push('.s-n{color:#8a94a6} .s-v{color:#B91C1C;font-weight:600} .s-d{color:#15803D;font-weight:600}')
+  p.push('td{padding:4px 10px;font-size:12px;border:1px solid #E2E8F0;width:25%}')
+  p.push('td.l{font-weight:600;color:#475569;background:#F8FAFC;border-left:2px solid #E2E8F0}')
+  p.push('td.v{color:#1E293B}')
+  p.push('.vacio{color:#94A3B8;font-style:italic}')
+  p.push('.s-n{color:#64748B} .s-v{color:#B91C1C;font-weight:600} .s-d{color:#15803D;font-weight:600}')
   p.push('.s-p{color:#C2410C;font-weight:600} .s-x{color:#7E22CE;font-weight:600}')
   p.push('.v-d,.v-pv,.v-vd,.v-pd,.v-na{display:inline-block;padding:1px 5px;border-radius:4px;font-weight:600;font-size:11px}')
   p.push('.v-d{background:#DCFCE7;color:#15803D}.v-pv{background:#FFEDD5;color:#C2410C}.v-vd{background:#FEE2E2;color:#B91C1C}.v-pd{background:#FEF3C7;color:#B45309}.v-na{background:#F1F5F9;color:#64748B}')
-  p.push('.leyV{font-size:9.5px;color:#6b7484;line-height:1.8;padding:0 2px}')
+  p.push('.leyV{font-size:9.5px;color:#64748B;line-height:1.8;padding:0 2px}')
   p.push('.leyV i{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 3px 0 8px;vertical-align:middle}')
   p.push('.leyV i:first-child{margin-left:0}')
-  p.push('.csvbox{margin:8px 16px 0;background:#fff;border:1px solid #dce3ec;border-radius:4px;overflow:hidden}')
+  p.push('.csvbox{margin:8px 16px 0;background:#fff;border:1px solid #E2E8F0;border-radius:4px;overflow:hidden}')
   p.push('.csvhdr{background:#1E293B;color:#fff;font-size:11px;font-weight:700;padding:6px 12px;letter-spacing:0.4px}')
   p.push('.csvhdr.venc{background:#B91C1C}.csvhdr.pend{background:#C2410C}.csvcol{padding:8px 12px 6px}')
   p.push('.csvsec{font-size:9px;color:#1E293B;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;margin:6px 0 4px}')
-  p.push('.csvit{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:3px 0;border-bottom:1px solid #f0f2f5}')
+  p.push('.csvit{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:3px 0;border-bottom:1px solid #F1F5F9}')
   p.push('.csvit:last-child{border-bottom:none}.csvl{color:#64748B;font-size:10px}')
   p.push('.csvbox .v-d,.csvbox .v-pv,.csvbox .v-vd,.csvbox .v-pd,.csvbox .v-na{padding:0 6px}')
-  p.push('.ftr{font-size:10px;color:#8a94a6;text-align:center;padding:12px 16px;border-top:1px solid #e3e8ef;margin-top:8px;background:#fff}')
+  p.push('.ftr{font-size:10px;color:#64748B;text-align:center;padding:12px 16px;border-top:1px solid #E2E8F0;margin-top:8px;background:#fff}')
   p.push('.bar-btn{position:sticky;bottom:0;padding:10px 16px;background:#fff;border-top:2px solid #1E293B;text-align:center}')
   p.push('.bar-btn button{background:#1E293B;color:#fff;border:none;padding:9px 26px;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer}')
   p.push('.bar-btn button:hover{background:#0F172A}')
@@ -1183,7 +1183,7 @@ function _buildFichaSidebarHtml(headers, data, lc, autor, row) {
   p.push('<div class="ftr">')
   p.push('<div class="leyV"><i style="background:#DCFCE7"></i>AL DIA<i style="background:#FFEDD5"></i>POR VENCER<i style="background:#FEE2E2"></i>VENCIDO<i style="background:#FEF3C7"></i>PENDIENTE<i style="background:#F1F5F9"></i>N/A</div>')
   p.push('<div style="margin-top:8px">' + _fmtFechaActual() + ' · Fila ' + row + '</div>')
-  p.push('<div style="font-size:9px;color:#bbb;margin-top:2px">Sistema PADDS v3.1 · Creado por Patricio Varela C. · Interno TENS · Contacto: patriciovarelacontreras@gmail.com</div>')
+  p.push('<div style="font-size:9px;color:#94A3B8;margin-top:2px">Sistema PADDS v3.1 · Creado por Patricio Varela C. · Interno TENS · Contacto: patriciovarelacontreras@gmail.com</div>')
   p.push('</div>')
   p.push('<div class="bar-btn">')
   p.push('<button onclick="descargarPDF()" id="btnPDF">Descargar PDF</button>')
@@ -1302,30 +1302,30 @@ function _buildFichaHtml(headers, data, lc, autor) {
 
   var h = '<html><head><meta charset="UTF-8"><style>' +
     '@page{size:A4;margin:9mm 7mm}' +
-    'body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#212529;line-height:1.45;margin:0;padding:0}' +
+    'body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#1E293B;line-height:1.45;margin:0;padding:0}' +
     '.bar{height:3px;background:#1E293B;border-bottom:1.5px solid #0F766E}' +
     '.hdr{background:#1E293B;color:#fff;padding:16px 20px 12px;border-bottom:3px solid #0F766E}' +
     '.hdr .nom{font-size:19pt;font-weight:bold;letter-spacing:0.4px}' +
     '.hdr .sub{font-size:8pt;color:#CBD5E1;margin-top:6px;text-transform:uppercase;letter-spacing:1px}' +
     '.hdr .sub sp{display:inline-block;margin-right:28px}' +
-    '.info{background:#fbfcfe;padding:9px 20px;border-top:1px solid #e3e8ef;border-bottom:1px solid #e3e8ef;margin-bottom:12px}' +
-    '.info sp{display:inline-block;margin-right:26px;font-size:9pt;color:#3a4452}' +
-    '.info .lb{font-size:6.8pt;color:#8a94a6;text-transform:uppercase;letter-spacing:0.6px}' +
+    '.info{background:#F8FAFC;padding:9px 20px;border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin-bottom:12px}' +
+    '.info sp{display:inline-block;margin-right:26px;font-size:9pt;color:#475569}' +
+    '.info .lb{font-size:6.8pt;color:#64748B;text-transform:uppercase;letter-spacing:0.6px}' +
     '.badge{display:inline-block;padding:2px 10px;border-radius:3px;font-size:8pt;font-weight:bold;color:#fff}' +
     '.tag-v{background:#15803D}.tag-f{background:#B91C1C}' +
     '.tag-e{background:#C2410C}.tag-s{background:#7E22CE}.tag-def{background:#475569}' +
     'table{width:100%;border-collapse:collapse;margin-bottom:12px}' +
     '.sth{font-size:9.5pt;font-weight:bold;color:#fff;text-align:left;padding:6px 10px;letter-spacing:0.6px;text-transform:uppercase;border-bottom:2px solid #0F766E}' +
     'td{padding:3.5px 8px;font-size:8.5pt;border:0.5px solid #E2E8F0}' +
-    'td.l{font-weight:bold;color:#4a5464;width:22%;background:#f4f6f8;border-left:2px solid #dfe5ec}' +
-    'td.v{color:#212529;width:28%}' +
-    '.vacio{color:#b0b8c4;font-size:7.5pt;font-style:italic}' +
+    'td.l{font-weight:bold;color:#475569;width:22%;background:#F8FAFC;border-left:2px solid #E2E8F0}' +
+    'td.v{color:#1E293B;width:28%}' +
+    '.vacio{color:#94A3B8;font-size:7.5pt;font-style:italic}' +
     '.s-v{color:#B91C1C;font-weight:bold} .s-d{color:#15803D;font-weight:bold}' +
-    '.s-p{color:#C2410C;font-weight:bold} .s-x{color:#7E22CE;font-weight:bold} .s-n{color:#8a94a6}' +
+    '.s-p{color:#C2410C;font-weight:bold} .s-x{color:#7E22CE;font-weight:bold} .s-n{color:#64748B}' +
     '.v-d,.v-pv,.v-vd,.v-pd,.v-na{display:inline-block;padding:0 5px;border-radius:2px;font-weight:700}' +
-    '.v-d{background:#e3f1e8;color:#15803D}.v-pv{background:#fbeed9;color:#C2410C}.v-vd{background:#f9e3e1;color:#B91C1C}.v-pd{background:#f7f2d9;color:#B45309}.v-na{background:#eef1f5;color:#7a8494}' +
-    '.ftr{font-size:7pt;color:#8a94a6;text-align:center;padding-top:10px;border-top:1px solid #E2E8F0;margin-top:8px}' +
-    '.wm{position:fixed;bottom:2mm;left:0;right:0;text-align:center;font-size:6.5pt;color:#d5dae2}' +
+    '.v-d{background:#DCFCE7;color:#15803D}.v-pv{background:#FFEDD5;color:#C2410C}.v-vd{background:#FEE2E2;color:#B91C1C}.v-pd{background:#FEF3C7;color:#B45309}.v-na{background:#F1F5F9;color:#64748B}' +
+    '.ftr{font-size:7pt;color:#64748B;text-align:center;padding-top:10px;border-top:1px solid #E2E8F0;margin-top:8px}' +
+    '.wm{position:fixed;bottom:2mm;left:0;right:0;text-align:center;font-size:6.5pt;color:#CBD5E1}' +
     '</style></head><body>'
 
   h += '<div class="bar"></div>' +
@@ -1342,7 +1342,7 @@ function _buildFichaHtml(headers, data, lc, autor) {
   h += _buildSeccionesHtml(headers, data, lc, vig, {
     hdrCls: 'sth', hdrPad: ';padding:6px 10px', hdrBg: function() { return '#1E293B' },
     lBdCol: function(si, cBg) { return cBg }, lBd: true,
-    lBgFor: function(si) { return si % 2 === 0 ? '#ffffff' : '#f6f8fa' },
+    lBgFor: function(si) { return si % 2 === 0 ? '#ffffff' : '#F8FAFC' },
     skip: function(c) { return c === COL.PRIORIDAD } })
 
   h += '<div class="ftr">Ficha generada el ' + _fmtFechaActual() + ' — Sistema PADDS v3.1 · Creado por Patricio Varela C. · Interno TENS · Contacto: patriciovarelacontreras@gmail.com</div>'

@@ -188,7 +188,7 @@ function mostrarSidebarEstadisticas() {
     '.count{font-size:18px;font-weight:600}' +
     '.tag{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}' +
     '.tag-pend{background:#C2410C} .tag-aprob{background:#15803D} .tag-rech{background:#B91C1C}' +
-    '.label-name{color:#3c4043;display:flex;align-items:center}' +
+    '.label-name{color:#1E293B;display:flex;align-items:center}' +
     '.footer{font-size:11px;color:#94A3B8;text-align:center;padding-top:12px;border-top:1px solid #E2E8F0;margin-top:12px}' +
     '</style></head><body>' +
     '<h2>Recepción formularios PADDS</h2>' +

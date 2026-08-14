@@ -194,11 +194,11 @@ chk('Sector: "PENDIENTE" distinto de "AMARILLO" (gris azulado)', _SECTOR_COLORS[
       (res[r2].ok ? '<td></td>' : '<td style="color:#B91C1C">' + _esc(res[r2].d) + '</td>') + '</tr>'
   }
   var html = '<html><head><base target="_top"><style>' +
-    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:14px;background:#F1F5F9;color:#202124;font-size:12.5px}' +
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:14px;background:#F1F5F9;color:#1E293B;font-size:12.5px}' +
     'h2{margin:0 0 2px;font-size:17px;color:#1E293B}' +
     '.sub{font-size:11px;color:#64748B;margin-bottom:10px}' +
     '.sum{display:flex;gap:8px;margin-bottom:10px}' +
-    '.chip{flex:1;border-radius:10px;padding:8px;text-align:center;font-weight:700;color:#fff;font-size:13px}' +
+    '.sum .ch{flex:1;border-radius:10px;padding:8px;text-align:center;font-weight:700;color:#fff;font-size:13px}' +
     'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden}' +
     'td{padding:4px 8px;border-bottom:1px solid #F1F5F9}' +
     'td:first-child{width:24px;text-align:center}' +
@@ -206,9 +206,9 @@ chk('Sector: "PENDIENTE" distinto de "AMARILLO" (gris azulado)', _SECTOR_COLORS[
     '<h2>Diagnóstico del sistema</h2>' +
     '<div class="sub">' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm') + ' · solo revisión, no modifica nada</div>' +
     '<div class="sum">' +
-    '<div class="chip" style="background:' + (okN === res.length ? '#15803D' : '#C2410C') + '">' + okN + ' OK</div>' +
-    '<div class="chip" style="background:' + (failN ? '#B91C1C' : '#64748B') + '">' + failN + ' pendientes</div>' +
-    '<div class="chip" style="background:#1E293B">' + res.length + ' total</div></div>' +
+    '<div class="ch" style="background:' + (okN === res.length ? '#15803D' : '#C2410C') + '">' + okN + ' OK</div>' +
+    '<div class="ch" style="background:' + (failN ? '#B91C1C' : '#64748B') + '">' + failN + ' pendientes</div>' +
+    '<div class="ch" style="background:#1E293B">' + res.length + ' total</div></div>' +
     '<table>' + rows + '</table>' +
     '</body></html>'
   ui.showSidebar(HtmlService.createHtmlOutput(html).setTitle('Diagnóstico PADDS').setWidth(400))

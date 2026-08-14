@@ -120,7 +120,7 @@ function rehacerMenus() {
 
 function mostrarAyudaRapida() {
   var css = '<style>' +
-    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:14px;background:#F1F5F9;color:#202124;font-size:13px;line-height:1.55}' +
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:14px;background:#F1F5F9;color:#1E293B;font-size:13px;line-height:1.55}' +
     'h2{font-size:18px;color:#1E293B;margin:0 0 2px;letter-spacing:.2px}' +
     '.sub{font-size:11.5px;color:#64748B;margin:0 0 12px}' +
     '.card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.10);margin-bottom:10px;overflow:hidden}' +
@@ -136,8 +136,8 @@ function mostrarAyudaRapida() {
     '.chip{display:inline-block;background:#E0F2FE;color:#0369A1;border-radius:20px;padding:1px 9px;font-size:11px;margin:0 4px 4px 0;white-space:nowrap}' +
     '.paso{display:flex;gap:8px;margin:6px 0;align-items:baseline}' +
     '.paso .n{flex:0 0 18px;height:18px;border-radius:50%;background:var(--c);color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:18px;margin-top:2px}' +
-    '.tip{background:#FEF3C7;border:1px solid #FDE68A;color:#A16207;border-radius:8px;padding:6px 10px;font-size:12px;margin:8px 0}' +
-    '.aviso{background:#FEE2E2;border:1px solid #FCA5A5;color:#B91C1C;border-radius:8px;padding:6px 10px;font-size:12px;margin:8px 0}' +
+    '.tip{background:#FEF3C7;border:1px solid #FDE68A;color:#B45309;border-radius:8px;padding:6px 10px;font-size:12px;margin:8px 0}' +
+    '.aviso{background:#FEE2E2;border:1px solid #FEE2E2;color:#B91C1C;border-radius:8px;padding:6px 10px;font-size:12px;margin:8px 0}' +
     '.ley{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}' +
     '.ley .l{display:inline-flex;align-items:center;gap:5px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:2px 7px;font-size:11px}' +
     '.dot{width:9px;height:9px;border-radius:3px;display:inline-block}' +
@@ -180,7 +180,7 @@ function mostrarAyudaRapida() {
     { c: '#B91C1C', t: '🚨 Alertas', open: false,
       h: '<p>Panel visual de pacientes con controles <b>VENCIDOS</b>, <b>POR VENCER</b>, <b>PENDIENTES</b> y <b>PRIORITARIOS</b>. Haz clic en un paciente para ir a su fila.</p>' +
          '<p class="men">Acceso: 🩺 Pacientes → 🔄 Vigencias → 🚨 Alertas.</p>' },
-    { c: '#334155', t: '👨‍⚕️ Créditos', open: false,
+    { c: '#475569', t: '👨‍⚕️ Créditos', open: false,
       h: '<p><b>Sistema PADDS</b> — Planilla de Atención Domiciliaria para CESFAM.</p>' +
          '<p><b>Creador:</b> Patricio Varela C. · <b>Cargo:</b> Interno TENS</p>' +
          '<p><b>Contacto:</b> patriciovarelacontreras@gmail.com</p>' +
@@ -204,7 +204,7 @@ function mostrarAyudaRapida() {
 
 function acercaDelSistema() {
   var html = '<html><head><base target="_top"><style>' +
-    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:16px;background:#F1F5F9;color:#202124;font-size:13px;line-height:1.55}' +
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:16px;background:#F1F5F9;color:#1E293B;font-size:13px;line-height:1.55}' +
     'h2{font-size:19px;color:#1E293B;margin:0}' +
     '.ver{font-size:11.5px;color:#64748B;margin:2px 0 14px}' +
     '.m{display:flex;gap:10px;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:10px 12px;margin-bottom:8px}' +
@@ -214,10 +214,10 @@ function acercaDelSistema() {
     '.f{font-size:11px;color:#94A3B8;text-align:center;margin-top:14px}' +
     '</style></head><body>' +
     '<h2>Sistema PADDS</h2>' +
-    '<div class="ver">Planilla de Atención Domiciliaria para CESFAM · v3.1</div>' +
+    '<div class="ver">Planilla de Atención Domiciliaria para CESFAM · v4.0</div>' +
     '<div class="m"><div class="ic" style="background:#1E293B">👨‍⚕️</div><div><b>Creador</b><span>Patricio Varela C. · Cargo: Interno TENS</span></div></div>' +
     '<div class="m"><div class="ic" style="background:#475569">📧</div><div><b>Contacto</b><span>patriciovarelacontreras@gmail.com</span></div></div>' +
-    '<div class="m"><div class="ic" style="background:#0F766E">📅</div><div><b>Última actualización</b><span>12/08/2026 · versión 3.1</span></div></div>' +
+    '<div class="m"><div class="ic" style="background:#0F766E">📅</div><div><b>Última actualización</b><span>14/08/2026 · versión 4.0</span></div></div>' +
     '<div class="m"><div class="ic" style="background:#0F766E">🩺</div><div><b>Pacientes</b><span>Ficha única con datos, patologías, cuidador, controles, signos vitales y priorización automática. 111 campos por secciones de color.</span></div></div>' +
     '<div class="m"><div class="ic" style="background:#B45309">📅</div><div><b>Agenda</b><span>Planificación semanal de visitas, con profesionales en columnas paralelas y tipos de atención.</span></div></div>' +
     '<div class="m"><div class="ic" style="background:#7E22CE">📝</div><div><b>Formulario</b><span>Recepción de solicitudes digitales con aprobación o rechazo en lote y pase automático a Pacientes.</span></div></div>' +
