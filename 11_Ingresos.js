@@ -339,7 +339,7 @@ function _ingAplicarCF(sh, d, desde, total) {
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('INGRESA')
       .setBackground('#DCFCE7').setFontColor('#15803D').setBold(true).setRanges([rA]).build())
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('PENDIENTE')
-      .setBackground('#FEF3C7').setFontColor('#A16207').setRanges([rA]).build())
+      .setBackground('#FEF3C7').setFontColor('#B45309').setRanges([rA]).build())
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextStartsWith('NO INGRESA')
       .setBackground('#FEE2E2').setFontColor('#B91C1C').setRanges([rA]).build())
   }
@@ -349,9 +349,9 @@ function _ingAplicarCF(sh, d, desde, total) {
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('GESTIONADOS')
       .setBackground('#DCFCE7').setFontColor('#15803D').setRanges([rE]).build())
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('PENDIENTES')
-      .setBackground('#FEF3C7').setFontColor('#A16207').setRanges([rE]).build())
+      .setBackground('#FEF3C7').setFontColor('#B45309').setRanges([rE]).build())
     reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('EN ESPERA')
-      .setBackground('#E0F2FE').setFontColor('#0369A1').setRanges([rE]).build())
+      .setBackground('#E0F2FE').setFontColor('#0E7490').setRanges([rE]).build())
   }
   sh.setConditionalFormatRules(reglas)
 }
