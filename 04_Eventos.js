@@ -31,6 +31,10 @@ function onSelectionChange(e) {
   var name = sh.getName()
   if (name !== HOJA_PAC && name !== HOJA_FORM) return
   var row = e.range.getRow()
+  if (name === HOJA_PAC && row === 1) {
+    _pulsarSeccionPac(e.range.getColumn())
+    return
+  }
   if (name === HOJA_PAC && row < 4) return
   if (name === HOJA_FORM && row < 6) return
 
@@ -44,6 +48,37 @@ function onSelectionChange(e) {
     if (!helper) return
     helper.getRange(1, 1, 1, 2).setValues([[name, row]])
   } catch(_e) {}
+}
+
+// Al hacer clic en una cabecera de sección (fila 1 de Pacientes), la sección
+// "parpadea" para indicar cuál quedó seleccionada. El clic ya funciona como
+// selector: no hace falta un dropdown aparte.
+function _pulsarSeccionPac(col) {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_PAC)
+  if (!sh) return
+  var cache = CacheService.getScriptCache()
+  var last = cache.get('_hp')
+  if (last && Date.now() - Number(last) < 600) return
+  cache.put('_hp', String(Date.now()), 10)
+  var lc = sh.getLastColumn()
+  if (col < 1 || col > lc) return
+  for (var i = 0; i < PAC_SECCIONES.length; i++) {
+    var sec = PAC_SECCIONES[i]
+    if (sec.ini > lc) break
+    if (sec.ini <= col && col <= Math.min(sec.fin, lc)) {
+      var rng = sh.getRange(1, sec.ini, 1, Math.min(sec.fin, lc) - sec.ini + 1)
+      var bg = sec.bg
+      try {
+        for (var p = 0; p < 3; p++) {
+          rng.setBackground(_lightenHex(bg, 95))
+          Utilities.sleep(130)
+          rng.setBackground(bg)
+          Utilities.sleep(130)
+        }
+      } catch (eP) {}
+      return
+    }
+  }
 }
 
 function onEdit(e) {

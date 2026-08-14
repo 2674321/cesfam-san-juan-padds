@@ -531,6 +531,19 @@ function _lightenHex(hex, rAdd, gAdd, bAdd) {
   return _ajustarHex(hex, rAdd || 140, gAdd || 100, bAdd || 110)
 }
 
+// "Animación" de parpadeo: alterna el fondo 3 veces y restaura el original.
+// Sheets no permite animaciones reales; esto simula el efecto al buscar/ubicar.
+function _flashFila(rng, color) {
+  try {
+    var orig = rng.getBackgrounds()
+    for (var i = 0; i < 3; i++) {
+      rng.setBackground(i % 2 === 0 ? color : '#FFFFFF')
+      Utilities.sleep(150)
+    }
+    rng.setBackgrounds(orig)
+  } catch (eF) {}
+}
+
 function _fmtCeldaParaComparar(val) {
   if (typeof val === 'object' && val instanceof Date && !isNaN(val.getTime())) {
     return Utilities.formatDate(val, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'dd/MM/yyyy')
