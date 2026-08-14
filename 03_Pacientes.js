@@ -169,7 +169,9 @@ function _navegarAFila(fila) {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
   if (!sh) return
-  sh.setActiveRange(sh.getRange(fila, 1))
+  var rng = sh.getRange(fila, 1, 1, sh.getLastColumn())
+  sh.setActiveRange(rng)
+  if (fila >= 4 && fila <= sh.getLastRow()) _flashFila(rng, '#CCFBF1')
   ss.toast('Paciente en la fila ' + fila, 'PADDS', 2)
 }
 
