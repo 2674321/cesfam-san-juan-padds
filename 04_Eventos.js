@@ -84,7 +84,7 @@ function onEdit(e) {
       var _bgForm = _FORM_SEC_TINTS[7] || '#ffffff'
       if (row % 2 === 0) _bgForm = _ajustarHex(_bgForm, -8, -8, -8)
       e.range.setBackground(_notaForm ? '#FEE2E2' : _bgForm)
-        .setFontColor(_notaForm ? '#B91C1C' : '#212121')
+        .setFontColor(_notaForm ? '#B91C1C' : '#1E293B')
       return
     }
 

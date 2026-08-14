@@ -1405,25 +1405,25 @@ function crearInstrucciones() {
       var col = _COLUMNAS[c]
       if (!col) continue
       var alt = (c - sec.ini) % 2 === 0
-      var bg = alt ? WHITE : '#f5f7fa'
+      var bg = alt ? '#FFFFFF' : '#F8FAFC'
 
       sh.getRange(row, 1).setValue(col.n)
-        .setFontFamily('Courier New').setFontSize(9).setFontColor('#888')
+        .setFontFamily('Courier New').setFontSize(9).setFontColor('#64748B')
         .setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
         .setBorder(true, true, true, true, true, true, _UI.border, BS)
 
       sh.getRange(row, 2).setValue(col.name)
         .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold')
-        .setFontColor('#212121').setBackground(bg).setVerticalAlignment('middle')
+        .setFontColor('#1E293B').setBackground(bg).setVerticalAlignment('middle')
         .setBorder(true, true, true, true, true, true, _UI.border, BS)
 
       sh.getRange(row, 3).setValue(col.desc)
-        .setFontFamily(_UI.font).setFontSize(9).setFontColor('#424242')
+        .setFontFamily(_UI.font).setFontSize(9).setFontColor('#475569')
         .setBackground(bg).setVerticalAlignment('middle').setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
         .setBorder(true, true, true, true, true, true, _UI.border, BS)
 
       sh.getRange(row, 4).setValue(col.vals)
-        .setFontFamily(_UI.font).setFontSize(9).setFontColor('#555')
+        .setFontFamily(_UI.font).setFontSize(9).setFontColor('#64748B')
         .setBackground(bg).setVerticalAlignment('middle').setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
         .setBorder(true, true, true, true, true, true, _UI.border, BS)
 
@@ -1441,7 +1441,7 @@ function crearInstrucciones() {
 
   sh.getRange(row, 1, 1, 5).merge()
   sh.getRange(row, 1).setValue('Los colores de cada sección coinciden con los de la fila de encabezados en Pacientes. Tooltips disponibles al pasar el mouse sobre fila 3.')
-    .setFontFamily(_UI.font).setFontSize(10).setFontColor('#757575').setBackground('#F1F5F9')
+    .setFontFamily(_UI.font).setFontSize(10).setFontColor('#64748B').setBackground('#F1F5F9')
     .setVerticalAlignment('middle').setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
   sh.setRowHeight(row, 24)
 
