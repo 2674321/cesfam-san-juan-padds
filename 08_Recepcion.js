@@ -666,8 +666,8 @@ function _batchCopiarFormularios(formRows) {
       ? proxControlRaw : _parseDate(proxControlRaw)
 
     var fechaStr = (fechaAtencion instanceof Date && !isNaN(fechaAtencion.getTime()))
-      ? Utilities.formatDate(fechaAtencion, Session.getScriptTimeZone(), 'dd/MM/yyyy')
-      : Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy')
+      ? fmtFecha(fechaAtencion)
+      : fmtFecha(new Date())
 
     if (found) {
       // ─── Existing patient: update service date and cumulative logs ────────
@@ -686,7 +686,7 @@ function _batchCopiarFormularios(formRows) {
       if (prestacion) obsParts.push('Prestación: ' + prestacion)
       if (observaciones) obsParts.push('Obs: ' + observaciones)
       if (visitaPerdida === 'SI') obsParts.push('Visita perdida')
-      if (proxControl) obsParts.push('Próximo control: ' + Utilities.formatDate(proxControl, Session.getScriptTimeZone(), 'dd/MM/yyyy'))
+      if (proxControl) obsParts.push('Próximo control: ' + fmtFecha(proxControl))
       if (prestNorm.indexOf('CONTROL CUIDADOR') >= 0) obsParts.push('Control cuidador')
       if (formData.length > 17 && String(formData[17] || '').trim().toUpperCase() === 'SI') obsParts.push('Paciente oncológico')
       if (prestacion && !fechaOk) obsParts.push('⚠️ Fecha de atención inválida')
@@ -785,7 +785,7 @@ function _batchCopiarFormularios(formRows) {
       if (prestacion) obsParts2.push('Prestación: ' + prestacion)
       if (observaciones) obsParts2.push('Obs: ' + observaciones)
       if (visitaPerdida === 'SI') obsParts2.push('Visita perdida')
-      if (proxControl) obsParts2.push('Próximo control: ' + Utilities.formatDate(proxControl, Session.getScriptTimeZone(), 'dd/MM/yyyy'))
+      if (proxControl) obsParts2.push('Próximo control: ' + fmtFecha(proxControl))
       if (formData.length > 17 && String(formData[17] || '').trim().toUpperCase() === 'SI') obsParts2.push('Paciente oncológico')
       if (prestacion && !fechaOk) obsParts2.push('⚠️ Fecha de atención inválida')
       if (obsParts2.length) blank[COL.OBSERVACIONES - 1] = '[' + fechaStr + '] ' + obsParts2.join(' | ')

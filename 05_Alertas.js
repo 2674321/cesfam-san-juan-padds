@@ -8,7 +8,7 @@ function mostrarAlertas() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   ss.toast('Generando alertas…', 'PADDS', 1)
   var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) { ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Error', 4); return }
+  if (!sh) { ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Pacientes', 4); return }
 
   var lr = sh.getLastRow()
   if (lr < 4) { ss.toast('Sin datos de pacientes para generar alertas', 'Alertas', 2); return }

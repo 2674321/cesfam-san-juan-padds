@@ -272,7 +272,7 @@ function aplicarFiltroSecciones(sh) {
 function agregarPaciente() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Error', 4); return }
+  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Pacientes', 4); return }
 
   var f = sh.getFilter()
   if (f) f.remove()
@@ -494,7 +494,7 @@ function _actualizarEstadosFila(row) {
 function recalcularTodo() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Error', 4); return }
+  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Pacientes', 4); return }
   var lr = sh.getLastRow()
   if (lr < 4) { ss.toast('Sin datos de pacientes para procesar', 'Pacientes', 2); return }
   ss.toast('Recalculando vigencias y prioridades…', 'PADDS', 1)
@@ -956,7 +956,7 @@ function ponerMayusculasPacientes(confirmado) {
 function ordenarPacientes() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Error', 4); return }
+  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Pacientes', 4); return }
   ss.toast('Ordenando pacientes…', 'PADDS', 1)
   var lr = sh.getLastRow()
   if (lr < 4) { ss.toast('Sin datos para ordenar', 'Pacientes', 3); return }
@@ -990,7 +990,7 @@ function ordenarPacientes() {
 function verFichaPaciente() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Error', 4); return }
+  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Pacientes', 4); return }
 
   var row = sh.getActiveRange() ? sh.getActiveRange().getRow() : -1
   if (row < 4) {
@@ -1467,7 +1467,7 @@ function reindexarPacientes() {
 function eliminarPaciente() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Error', 4); return }
+  if (!sh) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Pacientes', 4); return }
   var a = sh.getActiveRange()
   if (!a) return
   var row = a.getRow()
