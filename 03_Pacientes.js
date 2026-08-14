@@ -211,6 +211,7 @@ function _aplicarFiltrosPac(sh) {
   var data = sh.getRange(4, 1, lr - 3, 12).getValues()
   var ocultas = 0
   var ranges = []
+  var filasOk = []
   for (var r = 0; r < data.length; r++) {
     var estadoRow = _norm(data[r][5]).toUpperCase()
     var rowMatch = est === '' || est === 'TODOS' || estadoRow === est
@@ -232,6 +233,8 @@ function _aplicarFiltrosPac(sh) {
         ranges.push([4 + r, 1])
       }
       ocultas++
+    } else {
+      filasOk.push(4 + r)
     }
   }
   for (var i = 0; i < ranges.length; i++) {
@@ -240,6 +243,7 @@ function _aplicarFiltrosPac(sh) {
 
   var visibles = data.length - ocultas
   sh.getRange('D2').setValue(visibles + ' de ' + data.length + ' pacientes')
+  if (visibles > 0) _flashFilas(sh, filasOk, '#CCFBF1', 300)
 }
 
 // ─── FILTRO DE SECCIONES (dropdown F2, una celda) ────────────────────────────

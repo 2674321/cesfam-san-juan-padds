@@ -544,6 +544,30 @@ function _flashFila(rng, color) {
   } catch (eF) {}
 }
 
+// Parpadeo único para muchas filas a la vez (buscador/filtros): pinta en color,
+// pausa y restaura los fondos originales. Ignora el pedido si hay más de 400.
+function _flashFilas(sh, filas, color, milis) {
+  try {
+    if (!filas || filas.length === 0 || filas.length > 400) return
+    var lc = sh.getLastColumn()
+    var chunks = []
+    var start = filas[0], prev = filas[0], n = 1
+    for (var i = 1; i < filas.length; i++) {
+      if (filas[i] === prev + 1) { n++; prev = filas[i] }
+      else { chunks.push([start, n]); start = filas[i]; prev = filas[i]; n = 1 }
+    }
+    chunks.push([start, n])
+    var rngs = []
+    for (var c = 0; c < chunks.length; c++) {
+      var rg = sh.getRange(chunks[c][0], 1, chunks[c][1], lc)
+      rngs.push([rg, rg.getBackgrounds()])
+    }
+    for (var c2 = 0; c2 < rngs.length; c2++) rngs[c2][0].setBackground(color)
+    Utilities.sleep(milis || 350)
+    for (var c3 = 0; c3 < rngs.length; c3++) rngs[c3][0].setBackgrounds(rngs[c3][1])
+  } catch (eF) {}
+}
+
 function _fmtCeldaParaComparar(val) {
   if (typeof val === 'object' && val instanceof Date && !isNaN(val.getTime())) {
     return Utilities.formatDate(val, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'dd/MM/yyyy')

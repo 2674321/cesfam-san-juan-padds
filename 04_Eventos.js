@@ -81,6 +81,19 @@ function _pulsarSeccionPac(col) {
   }
 }
 
+// Al elegir una sección en el dropdown F2, su cabecera de color parpadea
+// para confirmar cuál quedó seleccionada.
+function _animarSeccionElegida(nombre) {
+  var n = String(nombre || '').trim().toUpperCase()
+  if (!n || n === 'TODAS' || n === 'TODOS') return
+  for (var i = 0; i < PAC_SECCIONES.length; i++) {
+    if (String(PAC_SECCIONES[i].nombre).toUpperCase() === n) {
+      _pulsarSeccionPac(PAC_SECCIONES[i].ini)
+      return
+    }
+  }
+}
+
 function onEdit(e) {
   if (!e) return
   if (_processingEdit) return
@@ -165,6 +178,7 @@ function onEdit(e) {
 
     if (shName === HOJA_PAC && row === 2 && c1 === 6) {
       aplicarFiltroSecciones(sh)
+      _animarSeccionElegida(String(sh.getRange('F2').getValue() || ''))
       return
     }
 
