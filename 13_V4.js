@@ -276,7 +276,7 @@ function _filaV4Html(vals, fila, lc) {
     if (sec.ini > lc) continue
     b.push(_uiAcc(sec.nombre, _seccionV4Html(vals, sec, lc), s === 4))
   }
-  return '<style>' + _uiCss() + _uiExtCss() + '</style><body>' + b.join('') + '</body>'
+  return '<!DOCTYPE html><html><head><base target="_top"><meta charset="UTF-8"><style>' + _uiCss() + _uiExtCss() + '</style></head><body>' + b.join('') + '</body></html>'
 }
 
 // ─────────────────────────────────────────────────────────
