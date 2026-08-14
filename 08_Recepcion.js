@@ -696,6 +696,16 @@ function _batchCopiarFormularios(formRows) {
         pac.getRange(pacRow, COL.EDITOR, 1, 1).setValues([[profesional]])
       }
 
+      // Nombre/apellidos normalizados desde el formulario (sin editar a mano)
+      // y sector PENDIENTE si el paciente aún no tiene uno asignado.
+      var _nU = _dividirNombreApellidos(String(formData[7] || ''), String(formData[8] || ''), '')
+      if (_nU.nombre) pac.getRange(pacRow, COL.NOMBRE).setValue(_nU.nombre)
+      if (_nU.apellido) pac.getRange(pacRow, COL.APELLIDO).setValue(_nU.apellido)
+      if (_nU.apellido2) pac.getRange(pacRow, COL.APELLIDO2).setValue(_nU.apellido2)
+      if (String(found.data[COL.SECTOR - 1] || '').trim() === '') {
+        pac.getRange(pacRow, COL.SECTOR).setValue('PENDIENTE')
+      }
+
       for (var fi = 0; fi < FORM_A_PAC.length; fi++) {
         var fpCol = FORM_A_PAC[fi][0] - 1, ppCol = FORM_A_PAC[fi][1] - 1
         if (fpCol < formData.length && ppCol >= 0 && ppCol < lc
@@ -737,6 +747,14 @@ function _batchCopiarFormularios(formRows) {
       if (servicioCol && servicioCol <= lc && fechaOk) {
         blank[servicioCol - 1] = _SERVICIO_SI_MAP[prestNorm] ? 'SI' : fechaAtencion
       }
+
+      // Sector nuevo queda PENDIENTE (gris) hasta que se asigne.
+      if (!blank[COL.SECTOR - 1]) blank[COL.SECTOR - 1] = 'PENDIENTE'
+      // Separar el nombre en NOMBRE/APELLIDO/APELLIDO 2 para no editarlo a mano.
+      var _nS = _dividirNombreApellidos(String(formData[7] || ''), String(formData[8] || ''), '')
+      if (_nS.nombre) blank[COL.NOMBRE - 1] = _nS.nombre
+      if (_nS.apellido) blank[COL.APELLIDO - 1] = _nS.apellido
+      if (_nS.apellido2) blank[COL.APELLIDO2 - 1] = _nS.apellido2
 
       var obsParts2 = []
       if (prestacion) obsParts2.push('Prestación: ' + prestacion)

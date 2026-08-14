@@ -57,6 +57,37 @@ function _calcularEdad(fechaNac) {
 
 // hacia abajo, de abajo hacia arriba. Nunca borra hojas ni filas con
 
+// ─── DIVISIÓN AUTOMÁTICA NOMBRE / APELLIDO / APELLIDO 2 ─────────────────────
+// El formulario y la hoja Ingresos suelen entregar el nombre en un solo campo
+// ("DIEGO ANDRES ALDUNATE RUBILAR") o el apellido en uno solo ("ALDUNATE
+// RUBILAR"). Esta función separa en NOMBRE (2 palabras) + APELLIDO (paterno)
+// + APELLIDO 2 (materno) para no tener que editarlo a mano en Pacientes.
+function _dividirNombreApellidos(nombre, apPaterno, apMaterno) {
+  var n = String(nombre || '').toUpperCase().replace(/\s+/g, ' ').trim()
+  var a1 = String(apPaterno || '').toUpperCase().replace(/\s+/g, ' ').trim()
+  var a2 = String(apMaterno || '').toUpperCase().replace(/\s+/g, ' ').trim()
+
+  // Apellido con 2+ palabras y sin materno → la 1ª es paterno, el resto materno.
+  if (!a2 && a1.indexOf(' ') > 0) {
+    var ta = a1.split(' ')
+    a1 = ta.shift()
+    a2 = ta.join(' ')
+  }
+
+  // Nombre con 3+ palabras → las 2 primeras son nombre; el resto baja a los
+  // apellidos: paterno si falta, si no materno.
+  var tn = n.split(' ')
+  if (tn.length > 2 && tn[0]) {
+    n = tn.slice(0, 2).join(' ')
+    var sobra = tn.slice(2).join(' ')
+    if (!a1) a1 = sobra
+    else if (!a2) a2 = sobra
+    else a2 = (a2 + ' ' + sobra).trim()
+  }
+
+  return { nombre: n, apellido: a1, apellido2: a2 }
+}
+
 function _borrarFilasVacias(sh, desdeFila) {
   if (!sh || desdeFila < 1) return 0
   var max = sh.getMaxRows()
