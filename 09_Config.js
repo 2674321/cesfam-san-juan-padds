@@ -6,6 +6,20 @@
 function onOpen() {
   var ui = SpreadsheetApp.getUi()
 
+  ui.createMenu('🏠 Inicio')
+    .addItem('📊 Centro de control', 'abrirCentroControl')
+    .addItem('🔎 Buscar (global)', 'buscarPacienteGlobal')
+    .addSeparator()
+    .addItem('📄 Ficha V4', 'verFichaPacienteV4')
+    .addItem('📈 Dashboard', 'abrirDashboardV4')
+    .addSeparator()
+    .addItem('🚨 Alertas', 'mostrarAlertasV4')
+    .addItem('✅ Tareas', 'mostrarTareas')
+    .addSeparator()
+    .addItem('🔍 Auditoría de datos', 'mostrarAuditoriaDatos')
+    .addItem('📋 Guía de columnas', 'mostrarGuiaColumnas')
+    .addToUi()
+
   ui.createMenu('📅 Agenda')
     .addItem('➕ Agregar semana', 'generarSemana')
     .addSubMenu(ui.createMenu('➕ Más semanas')

@@ -170,7 +170,10 @@ chk('Sector: "PENDIENTE" distinto de "AMARILLO" (gris azulado)', _SECTOR_COLORS[
     'organizarHojas', 'configurarResaltadoFila', 'crearParametros',
     'crearDashboard', 'actualizarDashboard', 'repararFormulas', 'ejecutarPruebas',
     'inicializarPADDS', 'configurarBackupAutomatico', 'ejecutarBackup',
-    'mostrarAyudaRapida', 'crearInstrucciones', 'rehacerMenus', 'acercaDelSistema'
+    'mostrarAyudaRapida', 'crearInstrucciones', 'rehacerMenus', 'acercaDelSistema',
+    'abrirCentroControl', 'buscarPacienteGlobal', 'verFichaPacienteV4',
+    'abrirDashboardV4', 'mostrarAlertasV4', 'mostrarTareas',
+    'mostrarAuditoriaDatos', 'mostrarGuiaColumnas'
   ]
   var faltantes = []
   for (var m = 0; m < handlers.length; m++) {
