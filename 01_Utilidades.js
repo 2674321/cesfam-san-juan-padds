@@ -62,8 +62,9 @@ function _calcularEdad(fechaNac) {
 // - Si hay apellido(s) explícito(s): el apellido con 2+ palabras se parte en
 //   paterno + materno, y el exceso de palabras del nombre (3+) baja a los
 //   apellidos que falten.
-// - Si todo viene en el campo nombre (modo "un solo campo"): primera palabra =
-//   NOMBRE, el resto = apellidos (2ª palabra → APELLIDO, lo demás → APELLIDO 2).
+// - Si todo viene en el campo nombre (modo "un solo campo"): regla simple por
+//   cantidad de palabras: 2 → 1 nombre + 1 apellido; 3 → 1 nombre + 2 apellidos;
+//   4+ → 2 nombres + 2 apellidos (lo que sobre va a APELLIDO 2).
 function _dividirNombreApellidos(nombre, apPaterno, apMaterno) {
   var n = String(nombre || '').toUpperCase().replace(/\s+/g, ' ').trim()
   var a1 = String(apPaterno || '').toUpperCase().replace(/\s+/g, ' ').trim()
@@ -90,14 +91,14 @@ function _dividirNombreApellidos(nombre, apPaterno, apMaterno) {
     return { nombre: n, apellido: a1, apellido2: a2 }
   }
 
-  // Modo "un solo campo": primera palabra = NOMBRE, el resto = apellidos
-  // (2ª palabra → APELLIDO, lo demás → APELLIDO 2). Sin heurísticas.
+  // Modo "un solo campo": regla simple por cantidad de palabras.
   var tp = n.split(' ')
   if (tp.length < 2 || !tp[0]) return { nombre: n, apellido: '', apellido2: '' }
+  var numNombres = tp.length >= 4 ? 2 : 1
   return {
-    nombre: tp[0],
-    apellido: tp[1] || '',
-    apellido2: tp.slice(2).join(' ') || '',
+    nombre: tp.slice(0, numNombres).join(' '),
+    apellido: tp[numNombres] || '',
+    apellido2: tp.slice(numNombres + 1).join(' ') || '',
   }
 }
 
