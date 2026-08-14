@@ -55,18 +55,20 @@ var _ALIGN = {
 function _estiloFila(sh, row, lc) {
   var even = row % 2 === 0
   var rng = sh.getRange(row, 1, 1, lc)
+  var aligns = []
+  var fmts = []
+  for (var c = 1; c <= lc; c++) {
+    aligns.push(_ALIGN[c] || 'center')
+    fmts.push(c === 1 || c === 5 ? 'dd/mm/yyyy hh:mm' : (c === 6 || c === 16 ? 'dd/mm/yyyy' : 'General'))
+  }
   rng
     .setFontFamily(_UI.font).setFontSize(10).setFontColor('#212121')
     .setVerticalAlignment('middle')
     .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
-  rng.setBackground(even ? '#FFFFFF' : '#F8FAFC')
-  for (var c = 1; c <= lc; c++)
-    sh.getRange(row, c).setHorizontalAlignment(_ALIGN[c] || 'center')
+    .setBackground(even ? '#FFFFFF' : '#F8FAFC')
+    .setHorizontalAlignments([aligns])
+    .setNumberFormats([fmts])
   sh.setRowHeight(row, 26)
-  sh.getRange(row, 1).setNumberFormat('dd/mm/yyyy hh:mm')
-  sh.getRange(row, 5).setNumberFormat('dd/mm/yyyy hh:mm')
-  sh.getRange(row, 6).setNumberFormat('dd/mm/yyyy')
-  sh.getRange(row, 16).setNumberFormat('dd/mm/yyyy')
   sh.getRange(row, 17).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
 }
 
@@ -76,7 +78,11 @@ function _colorEstado(sh, row, estado, lc) {
   sh.getRange(row, 3).setBackground(css.badge).setFontColor(css.fg).setFontWeight('bold')
 }
 
-function _miniResumenForm(sh) {
+function _miniResumenForm(sh, force) {
+  // El panel ya construido no necesita reconstruirse (sus contadores son
+  // fórmulas vivas): onFormSubmit y los flujos de aprobar/rechazar/limpiar
+  // lo saltan; solo force=true (creación/formateo) lo reconstruye.
+  if (!force && PropertiesService.getScriptProperties().getProperty('_recPanelOk') === '1') return
   var lc = sh.getLastColumn() || 19
   var SEP = getFormulaSep()
   var BS_MED = SpreadsheetApp.BorderStyle.SOLID_MEDIUM
@@ -146,6 +152,7 @@ function _miniResumenForm(sh) {
   }
   sh.setRowHeight(2, 20)
   sh.setRowHeight(3, 36)
+  PropertiesService.getScriptProperties().setProperty('_recPanelOk', '1')
 }
 
 function _obtenerEstadisticas() {
@@ -303,7 +310,7 @@ function crearFormularioBase() {
   for (var i = 0; i < Math.min(NEW_ANCHOS.length, lc); i++)
     sh.setColumnWidth(i + 1, NEW_ANCHOS[i])
 
-  _miniResumenForm(sh)
+  _miniResumenForm(sh, true)
 
   var lrForm = sh.getLastRow()
   var maxRows = Math.max(300, lrForm + 5)
@@ -664,11 +671,15 @@ function _batchCopiarFormularios(formRows) {
 
     if (found) {
       // ─── Existing patient: update service date and cumulative logs ────────
+      // Todas las actualizaciones se acumulan en memoria y se escriben con un
+      // solo setValues (antes era ~8-10 escrituras por fila).
       var pacRow = found.row
+      var rowArr = found.data.slice()
+      var tocObs = false, tocMc = false
 
       if (servicioCol && servicioCol <= lc) {
         var sv = _SERVICIO_SI_MAP[prestNorm] ? 'SI' : (fechaOk ? fechaAtencion : '')
-        if (sv) pac.getRange(pacRow, servicioCol, 1, 1).setValues([[sv]])
+        if (sv) rowArr[servicioCol - 1] = sv
       }
 
       var obsParts = []
@@ -681,40 +692,38 @@ function _batchCopiarFormularios(formRows) {
       if (prestacion && !fechaOk) obsParts.push('⚠️ Fecha de atención inválida')
       if (obsParts.length) {
         var obsLine = '[' + fechaStr + '] ' + obsParts.join('\n    ')
-        var obsOld = String(found.data[COL.OBSERVACIONES - 1] || '').trim()
+        var obsOld = String(rowArr[COL.OBSERVACIONES - 1] || '').trim()
         var obsFlat = obsOld.replace(/\s+/g, ' ').trim()
         var lineFlat = obsLine.replace(/\s+/g, ' ').trim()
         if (!obsFlat || obsFlat.indexOf(lineFlat) === -1) {
-          var obsCell = pac.getRange(pacRow, COL.OBSERVACIONES)
-          obsCell.setValues([[obsOld ? obsOld + '\n\n' + obsLine : obsLine]])
-          obsCell.setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
+          rowArr[COL.OBSERVACIONES - 1] = obsOld ? obsOld + '\n\n' + obsLine : obsLine
+          tocObs = true
         }
       }
 
       if (prestacion) {
-        var mcOld = String(found.data[COL.CONTROLES_MISCELANEOS - 1] || '').trim()
+        var mcOld = String(rowArr[COL.CONTROLES_MISCELANEOS - 1] || '').trim()
         var mcLine = '[' + fechaStr + '] ' + prestacion
         var mcFlat = mcOld.replace(/\s+/g, ' ').trim()
         var mcLineFlat = mcLine.replace(/\s+/g, ' ').trim()
         if (!mcFlat || mcFlat.indexOf(mcLineFlat) === -1) {
-          var mcCell = pac.getRange(pacRow, COL.CONTROLES_MISCELANEOS)
-          mcCell.setValues([[mcOld ? mcOld + '\n' + mcLine : mcLine]])
-          mcCell.setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
+          rowArr[COL.CONTROLES_MISCELANEOS - 1] = mcOld ? mcOld + '\n' + mcLine : mcLine
+          tocMc = true
         }
       }
 
       if (profesional) {
-        pac.getRange(pacRow, COL.EDITOR, 1, 1).setValues([[profesional]])
+        rowArr[COL.EDITOR - 1] = profesional
       }
 
       // Nombre/apellidos normalizados desde el formulario (sin editar a mano)
       // y sector PENDIENTE si el paciente aún no tiene uno asignado.
       var _nU = _dividirNombreApellidos(String(formData[7] || ''), String(formData[8] || ''), '')
-      if (_nU.nombre) pac.getRange(pacRow, COL.NOMBRE).setValue(_nU.nombre)
-      if (_nU.apellido) pac.getRange(pacRow, COL.APELLIDO).setValue(_nU.apellido)
-      if (_nU.apellido2) pac.getRange(pacRow, COL.APELLIDO2).setValue(_nU.apellido2)
-      if (String(found.data[COL.SECTOR - 1] || '').trim() === '') {
-        pac.getRange(pacRow, COL.SECTOR).setValue('PENDIENTE')
+      if (_nU.nombre) rowArr[COL.NOMBRE - 1] = _nU.nombre
+      if (_nU.apellido) rowArr[COL.APELLIDO - 1] = _nU.apellido
+      if (_nU.apellido2) rowArr[COL.APELLIDO2 - 1] = _nU.apellido2
+      if (String(rowArr[COL.SECTOR - 1] || '').trim() === '') {
+        rowArr[COL.SECTOR - 1] = 'PENDIENTE'
       }
 
       for (var fi = 0; fi < FORM_A_PAC.length; fi++) {
@@ -726,10 +735,14 @@ function _batchCopiarFormularios(formRows) {
             var fvs = String(fv).trim()
             fvs = _formValorNormalizado(ppCol + 1, fvs)
             if (ppCol === COL.NOMBRE - 1 || ppCol === COL.APELLIDO - 1) fvs = _mayusNombre(fvs)
-            pac.getRange(pacRow, ppCol + 1, 1, 1).setValues([[fvs]])
+            rowArr[ppCol] = fvs
           }
         }
       }
+
+      pac.getRange(pacRow, 1, 1, lc).setValues([rowArr])
+      if (tocObs) pac.getRange(pacRow, COL.OBSERVACIONES, 1, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
+      if (tocMc) pac.getRange(pacRow, COL.CONTROLES_MISCELANEOS, 1, 1).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
 
       updated++
       filaDestino = pacRow
@@ -836,21 +849,27 @@ function rechazarFormularios() {
 
     if (rechRows.length === 0) { ss.toast('No hay Pendientes para rechazar', 'Formulario', 3); return }
 
-    var rng = sh.getRange(rechRows[0], 3, rechRows.length, 1)
-    var vals = []
-    for (var i = 0; i < rechRows.length; i++) vals.push(['Rechazado'])
-    rng.setValues(vals)
     var _quien = email + ' · ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm')
-    // Las filas Pendiente NO son contiguas: escribir un rango bloque sobrescribiría
-    // el ESTADO de filas intermedias (corrupción). Se escribe fila por fila.
-    for (var i = 0; i < rechRows.length; i++) {
-      var rnR = rechRows[i]
-      sh.getRange(rnR, 3).setValue('Rechazado')
-      sh.getRange(rnR, 3).setNote('Rechazado por: ' + _quien)
-      _colorEstado(sh, rnR, 'Rechazado', sh.getLastColumn())
+    // Los Rechazados NO son contiguos: no se escribe un bloque único (sobrescribiría
+    // el ESTADO de filas intermedias). Se agrupan los tramos contiguos y se escribe
+    // por tramo en lote (estado, nota, badges).
+    var _rechG = _agruparContiguos(rechRows.slice())
+    var _rcss = _ESTADO_CSS['Rechazado']
+    for (var i = 0; i < _rechG.length; i++) {
+      var r0 = _rechG[i][0], rn = _rechG[i][1]
+      var rgC = sh.getRange(r0, 3, rn, 1)
+      var vals = [], notas = [], bgs = [], fgs = [], wts = []
+      for (var v = 0; v < rn; v++) {
+        vals.push(['Rechazado'])
+        notas.push(['Rechazado por: ' + _quien])
+        bgs.push([_rcss.badge])
+        fgs.push([_rcss.fg])
+        wts.push(['bold'])
+      }
+      rgC.setValues(vals).setNotes(notas).setBackgrounds(bgs).setFontColors(fgs).setFontWeights(wts)
     }
 
-    ss.toast(rechRows.length + ' formularios marcados como Rechazado (usa Sincronizar para eliminar)', 'Formulario', 4)
+    ss.toast(rechRows.length + ' formularios marcados como Rechazado (usa "🧹 Limpiar procesados" para eliminar)', 'Formulario', 4)
     _miniResumenForm(sh)
   } catch(e) {
     SpreadsheetApp.getUi().alert('Error al rechazar: ' + e.message)
