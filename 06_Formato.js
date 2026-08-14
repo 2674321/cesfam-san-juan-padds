@@ -390,7 +390,7 @@ function _aplicarFormatoVisual(sh, lr, lc) {
 
   sh.getRange('E2').setValue('Mostrar ▾').setFontStyle('italic')
     .setFontColor('#555555').setFontSize(12).setHorizontalAlignment('center')
-    .setNote('Elige en F2 (una celda) qué sección mostrar temporalmente. Las demás columnas se ocultan; "TODAS" restaura. El buscador (B2) y esta fila siempre quedan visibles.')
+    .setNote('Elige en F2 (una celda) qué sección mostrar temporalmente. Las demás columnas se ocultan; "TODAS" restaura. El buscador (B2), el filtro de estado (G2) y esta fila siempre quedan visibles.')
   var listaF = ['TODAS']
   for (var _lf = 0; _lf < PAC_SECCIONES.length; _lf++) {
     if (PAC_SECCIONES[_lf].ini <= lc) listaF.push(PAC_SECCIONES[_lf].nombre)
@@ -402,6 +402,14 @@ function _aplicarFormatoVisual(sh, lr, lc) {
       .build())
     .setFontWeight('bold').setFontColor('#1E293B').setFontSize(11).setHorizontalAlignment('center')
     .setNote('Mostrar sección: elige aquí qué sección ver (las demás columnas se ocultan temporalmente). "TODAS" restaura la vista completa. El buscador (B2) y esta fila siempre quedan visibles.')
+
+  sh.getRange('G2').setValue('TODOS')
+  sh.getRange('G2').setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInList(['TODOS'].concat(PAC_VALIDACIONES[6]), true)
+      .setHelpText('Filtra los pacientes por estado de vigencia. "TODOS" restaura. Se combina con el buscador (B2).')
+      .build())
+    .setFontWeight('bold').setFontColor('#1E293B').setFontSize(11).setHorizontalAlignment('center')
+    .setNote('Filtro por estado: elige aquí qué estado ver ("TODOS" restaura). Se combina con el buscador de B2 y el contador D2 se actualiza solo.')
 
   sh.setRowHeight(3, 30)
   sh.getRange(3, 1, 1, lc).setFontFamily('Arial').setFontSize(9).setFontWeight('bold')

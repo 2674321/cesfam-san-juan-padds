@@ -184,20 +184,25 @@ function aplicarFiltroBusqueda(optTerm) {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
   if (!sh) return
-  var term = _norm(optTerm !== undefined ? optTerm : sh.getRange('B2').getValue())
+  if (optTerm !== undefined) sh.getRange('B2').setValue(optTerm)
+  _aplicarFiltrosPac(sh)
+}
+
+// Filtro combinado: busca el término de B2 y además oculta los pacientes cuyo
+// estado (columna F) no coincida con el dropdown de G2. TODOS/vacío = sin filtro.
+function _aplicarFiltrosPac(sh) {
+  var term = _norm(String(sh.getRange('B2').getValue() || ''))
+  var est = String(sh.getRange('G2').getValue() || '').trim().toUpperCase()
+  var usando = term !== '' || (est !== '' && est !== 'TODOS')
   var lr = sh.getLastRow()
   if (lr < 4) return
 
   var f = sh.getFilter()
-  if (f) {
-    f.remove()
-  } else {
-    sh.showRows(4, lr - 3)
-  }
+  if (f) f.remove()
 
-  if (term === '') {
-    sh.getRange('D2').setValue('')
+  if (!usando) {
     sh.showRows(4, lr - 3)
+    sh.getRange('D2').setValue('')
     var _lcR = sh.getLastColumn()
     try { sh.getRange(3, 1, lr - 2, _lcR).createFilter() } catch (eF) {}
     return
@@ -207,16 +212,20 @@ function aplicarFiltroBusqueda(optTerm) {
   var ocultas = 0
   var ranges = []
   for (var r = 0; r < data.length; r++) {
-    var nom = _norm(data[r][2]) + ' ' + _norm(data[r][3]) + ' ' + _norm(data[r][4])
-    var run = _norm(data[r][7]).replace(/[^a-z0-9]/g, '')
-    var tel = _norm(data[r][11]).replace(/[^a-z0-9]/g, '')
-    var match = nom.indexOf(term) !== -1 ||
-                run.indexOf(term) !== -1 ||
-                tel.indexOf(term) !== -1 ||
-                _norm(data[r][5]).indexOf(term) !== -1 ||
-                _norm(data[r][1]).indexOf(term) !== -1 ||
-                String(data[r][0]).indexOf(term) !== -1
-    if (!match) {
+    var estadoRow = _norm(data[r][5]).toUpperCase()
+    var rowMatch = est === '' || est === 'TODOS' || estadoRow === est
+    if (rowMatch && term !== '') {
+      var nom = _norm(data[r][2]) + ' ' + _norm(data[r][3]) + ' ' + _norm(data[r][4])
+      var run = _norm(data[r][7]).replace(/[^a-z0-9]/g, '')
+      var tel = _norm(data[r][11]).replace(/[^a-z0-9]/g, '')
+      rowMatch = nom.indexOf(term) !== -1 ||
+                  run.indexOf(term) !== -1 ||
+                  tel.indexOf(term) !== -1 ||
+                  _norm(data[r][5]).indexOf(term) !== -1 ||
+                  _norm(data[r][1]).indexOf(term) !== -1 ||
+                  String(data[r][0]).indexOf(term) !== -1
+    }
+    if (!rowMatch) {
       if (ranges.length > 0 && ranges[ranges.length - 1][0] + ranges[ranges.length - 1][1] === 4 + r) {
         ranges[ranges.length - 1][1]++
       } else {
