@@ -608,6 +608,48 @@ function recalcularTodo() {
   ss.toast('Vigencias recalculadas en ' + rows + ' pacientes', 'Pacientes', 4)
 }
 
+// ─── DIAGNÓSTICO: FILAS "EXTRA" (basura) EN PACIENTES ──────────────────────
+// Inspecciona las últimas filas de Pacientes y detecta filas que solo tienen
+// FALSE/N/A (ocupan espacio y parecen vacías). Sirve para confirmar si la
+// "fila extra" de las transferencias es una fila de casillas sin marcar.
+
+function diagnosticarFilasExtra() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  var sh = ss.getSheetByName(HOJA_PAC)
+  if (!sh) { ss.toast('No se encontró Pacientes', 'Pacientes', 4); return }
+  var lr = sh.getLastRow()
+  var lc = sh.getLastColumn()
+  var desde = Math.max(4, lr - 12)
+  var filas = lr - desde + 1
+  var data = sh.getRange(desde, 1, filas, lc).getValues()
+
+  var lineas = []
+  var soloBasura = 0
+  for (var i = 0; i < filas; i++) {
+    var nF = 0, nNA = 0, nFals = 0, otros = []
+    for (var c = 0; c < lc; c++) {
+      var v = data[i][c]
+      if (v == null || String(v).trim() === '') continue
+      var s = String(v).trim()
+      if (s === 'N/A') { nNA++; continue }
+      if (s === 'FALSE' || s === 'false' || v === false) { nFals++; continue }
+      nF++
+      if (otros.length < 2) otros.push(s)
+    }
+    var esBasura = (nF === 0)
+    if (esBasura) soloBasura++
+    lineas.push('Fila ' + (desde + i) + ': datos=' + nF + ' N/A=' + nNA + ' FALSE=' + nFals +
+      (esBasura ? ' → BASURA' : (otros.length ? ' · [' + otros.join(', ') + ']' : '')))
+  }
+
+  var resumen = 'Últimas filas de Pacientes (hasta la ' + lr + '):\n' + lineas.join('\n') +
+    '\n\nFilas basura (solo FALSE/N/A): ' + soloBasura
+  ss.toast(resumen, 'Diagnóstico', 10)
+  try {
+    SpreadsheetApp.getUi().alert('Diagnóstico filas extra', resumen, SpreadsheetApp.getUi().ButtonSet.OK)
+  } catch (eA) {}
+}
+
 // ─── LIMPIAR FILAS VACÍAS AL FINAL (Pacientes) ─────────────────────────────
 // Elimina las filas completamente vacías de la hoja Pacientes (desde la fila 4)
 // para que no queden filas huérfanas acumuladas al final. Nunca borra filas

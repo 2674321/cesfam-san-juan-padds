@@ -41,6 +41,7 @@ function onOpen() {
       .addItem('🛡️ Reparar formato', 'repararFormatoPacientes')
       .addSeparator()
       .addItem('🧹 Limpiar filas vacías', 'limpiarFilasVaciasPacientes')
+      .addItem('🔍 Diagnosticar filas extra', 'diagnosticarFilasExtra')
       .addSeparator()
       .addItem('➖ Eliminar paciente', 'eliminarPaciente'))
     .addSubMenu(ui.createMenu('🔄 Vigencias')
