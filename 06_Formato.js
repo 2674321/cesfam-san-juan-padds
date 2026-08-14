@@ -728,7 +728,7 @@ function _sincronizarOpciones(ss) {
   if (!hoja) {
     hoja = ss.insertSheet('_Opciones')
     try { hoja.hideSheet() } catch (eHid) {}
-    try { hoja.setTabColor('#DDDDDD') } catch (eTab) {}
+    try { hoja.setTabColor('#A5ABB0') } catch (eTab) {}
   }
   hoja.clear()
 
