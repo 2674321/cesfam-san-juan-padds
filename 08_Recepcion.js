@@ -566,13 +566,13 @@ function aprobarFormularios() {
       if (!cur[4]) sh.getRange(rn, 5).setValue(now).setNumberFormat('dd/mm/yyyy hh:mm')
     }
 
-    var transferidos = aprobRows.length ? _batchCopiarFormularios(aprobRows) : []
-    if (transferidos.length) recalcularTodo()
+    var transferidos = aprobRows.length ? _batchCopiarFormularios(aprobRows) : { rows: [], filaDestino: 0 }
+    if (transferidos.rows.length) recalcularTodo()
 
     // Eliminar SOLO filas (nunca hojas): Aprobados (ya copiados a Pacientes) y Rechazados
 
     var aEliminar = rechRows.slice()
-    for (var i = 0; i < transferidos.length; i++) aEliminar.push(transferidos[i])
+    for (var i = 0; i < transferidos.rows.length; i++) aEliminar.push(transferidos.rows[i])
     aEliminar.sort(function(a, b) { return b - a })
     var eliminados = 0
     for (var i = 0; i < aEliminar.length; i++) {
@@ -580,9 +580,21 @@ function aprobarFormularios() {
     }
 
     var msg = []
-    if (transferidos.length) msg.push(transferidos.length + ' transferidos a Pacientes')
+    if (transferidos.rows.length) msg.push(transferidos.rows.length + ' transferidos a Pacientes')
     if (rechRows.length) msg.push(rechRows.length + ' rechazados eliminados')
     ss.toast(msg.length ? msg.join(', ') : 'No hay Gestionados ni Rechazados para procesar. Pendientes se saltan.', 'PADDS', 4)
+
+    // Ir al paciente transferido y hacerlo "parpadear" para que se vea dónde quedó.
+    try {
+      if (transferidos.filaDestino >= 4) {
+        var pacN = ss.getSheetByName(HOJA_PAC)
+        if (pacN && transferidos.filaDestino <= pacN.getLastRow()) {
+          var pr = pacN.getRange(transferidos.filaDestino, 1, 1, pacN.getLastColumn())
+          pacN.setActiveRange(pr)
+          _flashFila(pr, '#CCFBF1')
+        }
+      }
+    } catch (eNav) {}
     if (avisosAp.length) {
       SpreadsheetApp.getUi().alert('Formularios con datos incompletos',
         'Estas filas están marcadas como Gestionado pero faltan datos o son inválidos, por lo que NO se enviaron a Pacientes:\n\n' +
@@ -624,6 +636,7 @@ function _batchCopiarFormularios(formRows) {
   var newRows = []
   var updated = 0
   var hechos = []
+  var filaDestino = 0
 
   for (var r = 0; r < formRows.length; r++) {
     var formData = formRows[r].data
@@ -721,6 +734,7 @@ function _batchCopiarFormularios(formRows) {
       }
 
       updated++
+      filaDestino = pacRow
     } else {
       // ─── New patient: create row ────────────────────────────────────────
       maxId++
@@ -781,6 +795,7 @@ function _batchCopiarFormularios(formRows) {
       pac.insertRowsAfter(pac.getMaxRows(), insertadas)
     }
     pac.getRange(nr, 1, newRows.length, lc).setValues(newRows)
+    filaDestino = nr
     var rng = pac.getRange(nr, 1, newRows.length, lc)
     rng.setFontColor('#000000')
     rng.setFontWeight('normal')
@@ -798,7 +813,7 @@ function _batchCopiarFormularios(formRows) {
   } catch (eV2) {}
 
   ss.toast(updated + ' pacientes actualizados, ' + newRows.length + ' pacientes creados desde formularios', 'PADDS', 4)
-  return hechos
+  return { rows: hechos, filaDestino: filaDestino }
 }
 
 function rechazarFormularios() {

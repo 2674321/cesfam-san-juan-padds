@@ -168,6 +168,11 @@ function onEdit(e) {
       return
     }
 
+    if (shName === HOJA_PAC && row === 2 && c1 === 7) {
+      _aplicarFiltrosPac(sh)
+      return
+    }
+
     if (shName === HOJA_PAC && row >= 4) {
       var _hasRelevant = false
       for (var cc = c1; cc <= c2; cc++) { if (_RELEVANT_COLS[cc]) { _hasRelevant = true; break } }
