@@ -929,7 +929,7 @@ function enviarIngresasAPacientes() {
   var ui = SpreadsheetApp.getUi()
   var resp = ui.alert('Enviar a Pacientes',
     'Se enviarán ' + candidatas.length + ' fila(s) con OBSERVACION = INGRESA a Pacientes.\n' +
-    'Las que ya existan no se duplican.\nLas filas enviadas se ELIMINARÁN de INGRESOS (se preguntará de nuevo antes de eliminar).\n\n¿Continuar?',
+    'Las que ya existan no se duplican.\nAl finalizar se podrán eliminar de INGRESOS las filas enviadas (y las repetidas del mismo RUN).\n\n¿Continuar?',
     ui.ButtonSet.YES_NO)
   if (resp !== ui.Button.YES) return
 
@@ -977,52 +977,44 @@ function enviarIngresasAPacientes() {
   ss.toast(msg, 'INGRESOS', 8)
 
   if (enviadas > 0) {
-    var resp2 = ui.alert('Eliminar filas',
-      enviadas + ' paciente(s) enviado(s). ¿Eliminar esas filas de INGRESOS?',
+    // Una única confirmación de limpieza: filas enviadas + repetidas del mismo RUN.
+    var elimPend = 0
+    var pendsTodas = []
+    try {
+      for (var pr = 0; pr < rutsEnviados.length; pr++) {
+        var pend = _ingRepetidasMismoRut(sh, d, rutsEnviados[pr], filasEnviadas)
+        for (var pi = 0; pi < pend.length; pi++) {
+          if (pendsTodas.indexOf(pend[pi]) < 0) pendsTodas.push(pend[pi])
+        }
+      }
+    } catch (ePend2) {}
+
+    var resp2 = ui.alert('Eliminar filas de INGRESOS',
+      enviadas + ' paciente(s) enviado(s)' +
+      (pendsTodas.length > 0 ? ' y ' + pendsTodas.length + ' fila(s) repetida(s) del mismo RUN' : '') +
+      '. ¿Eliminarlas de INGRESOS?',
       ui.ButtonSet.YES_NO)
     if (resp2 === ui.Button.YES) {
-
       filasEnviadas.sort(function(a, b) { return b - a })
+      var minDel = enviadas ? filasEnviadas[filasEnviadas.length - 1] : 0
       for (var k = 0; k < filasEnviadas.length; k++) {
         try { sh.deleteRow(filasEnviadas[k]) } catch (eDel) {}
       }
-      try {
-        var d2 = _ingDetectarColumnas(sh)
-        if (d2) _ingReBandear(sh, d2, filasEnviadas[filasEnviadas.length - 1])
-      } catch (eBand) {}
-      msg += ' · filas eliminadas: ' + enviadas
-    }
-  }
-
-  // nunca hojas). Se excluyen las filas enviadas de esta misma pasada.
-  var elimPend = 0
-  try {
-    var pendsTodas = []
-    for (var pr = 0; pr < rutsEnviados.length; pr++) {
-      var pend = _ingRepetidasMismoRut(sh, d, rutsEnviados[pr], filasEnviadas)
-      for (var pi = 0; pi < pend.length; pi++) {
-        if (pendsTodas.indexOf(pend[pi]) < 0) pendsTodas.push(pend[pi])
-      }
-    }
-    if (pendsTodas.length > 0) {
-      var respP = ui.alert('Filas repetidas del mismo paciente',
-        'Los pacientes enviados tienen ' + pendsTodas.length +
-        ' fila(s) más con el mismo RUN en INGRESOS (repetidas, pendientes o marcadas NO INGRESA).\n\n¿Eliminarlas también?',
-        ui.ButtonSet.YES_NO)
-      if (respP === ui.Button.YES) {
+      if (pendsTodas.length > 0) {
         pendsTodas.sort(function(a, b) { return b - a })
-        var minPend = pendsTodas[pendsTodas.length - 1]
+        minDel = minDel && minDel < pendsTodas[pendsTodas.length - 1] ? minDel : pendsTodas[pendsTodas.length - 1]
         for (var pk2 = 0; pk2 < pendsTodas.length; pk2++) {
           try { sh.deleteRow(pendsTodas[pk2]); elimPend++ } catch (ePD2) {}
         }
-        try {
-          var d3 = _ingDetectarColumnas(sh)
-          if (d3) _ingReBandear(sh, d3, minPend)
-        } catch (ePB2) {}
       }
+      try {
+        var d2 = _ingDetectarColumnas(sh)
+        if (d2) _ingReBandear(sh, d2, minDel)
+      } catch (eBand) {}
+      msg += ' · filas eliminadas: ' + enviadas
+      if (elimPend > 0) msg += ' · repetidas eliminadas: ' + elimPend
     }
-  } catch (ePend2) {}
-  if (elimPend > 0) msg += ' · pendientes eliminadas: ' + elimPend
+  }
 
   ss.toast(msg, 'INGRESOS', 8)
 }

@@ -10,21 +10,17 @@
 // botones, chips, badges, tabs, acordeones, tablas, estados y empty states.
 // Uso: '<style>' + _uiCss() + _uiExtCss() + '...' + '</style>'
 function _uiExtCss() {
-  return '.btn{display:inline-block;padding:9px 14px;background:#1E293B;color:#fff;border:none;border-radius:6px;font-size:13px;font-family:inherit;cursor:pointer;text-align:center;text-decoration:none}' +
-    '.btn:hover{background:#0F172A}.btn:disabled{opacity:.55;cursor:default}' +
-    '.btn-sec{background:#fff;color:#1E293B;border:1px solid #CBD5E1}.btn-sec:hover{background:#F1F5F9}' +
-    '.btn-sm{padding:6px 10px;font-size:12px;border-radius:5px}' +
+  return '.btn-sm{padding:6px 10px;font-size:12px;border-radius:5px}' +
     '.btn-teal{background:#0F766E}.btn-teal:hover{background:#115E59}' +
     '.btn-danger{background:#B91C1C}.btn-danger:hover{background:#991B1B}' +
     '.btn-block{display:block;width:100%;margin:6px 0}' +
     '.chip{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500;margin:2px 4px 2px 0;background:#F1F5F9;color:#475569}' +
-    '.chip-ok{background:#DCFCE7;color:#15803D}.chip-warn{background:#FEF3C7;color:#B45309}' +
+    '.chip-ok{background:#DCFCE7;color:#15803D}.chip-warn{background:#FFEDD5;color:#C2410C}' +
     '.chip-err{background:#FEE2E2;color:#B91C1C}.chip-info{background:#E0F2FE;color:#0369A1}' +
     '.chip-neu{background:#F1F5F9;color:#64748B}' +
     '.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}' +
-    '.b-ok{background:#DCFCE7;color:#15803D}.b-warn{background:#FEF3C7;color:#B45309}' +
+    '.b-ok{background:#DCFCE7;color:#15803D}.b-warn{background:#FFEDD5;color:#C2410C}' +
     '.b-err{background:#FEE2E2;color:#B91C1C}.b-info{background:#E0F2FE;color:#0369A1}.b-neu{background:#F1F5F9;color:#64748B}' +
-    '.card{background:#fff;border:1px solid #E2E8F0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:12px 14px;margin-bottom:12px}' +
     '.card-t{font-size:12px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}' +
     '.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #F1F5F9;font-size:13px}' +
     '.kv:last-child{border-bottom:none}.kv .k{color:#64748B}.kv .v{font-weight:500;text-align:right}' +
