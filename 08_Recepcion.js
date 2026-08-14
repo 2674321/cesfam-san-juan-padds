@@ -175,18 +175,18 @@ function _obtenerEstadisticas() {
 
 function mostrarSidebarEstadisticas() {
   var stats = _obtenerEstadisticas()
-  if (!stats) { SpreadsheetApp.getUi().alert('Primero crea la hoja de recepción (📝 Formulario → "📋 Crear hoja de recepción").'); return }
-  var html = '<html><head><base target="_top"><style>' +
-    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:16px;color:#202124;font-size:14px;background:#fff}' +
-    'h2{margin:0 0 4px 0;font-size:16px;font-weight:500;color:#1E293B}' +
+  if (!stats) { SpreadsheetApp.getActiveSpreadsheet().toast('Primero crea la hoja de recepción (📝 Formulario → "📋 Crear hoja")', 'Formulario', 4); return }
+  var html = '<html><head><base target="_top"><style>' + _uiCss() +
+    'body{padding:16px}' +
+    'h2{margin:0 0 4px 0;font-size:16px;font-weight:600;color:#1E293B}' +
     '.sub{font-size:12px;color:#64748B;margin-bottom:16px}' +
-    '.card{border:1px solid #E2E8F0;border-radius:8px;padding:12px;margin-bottom:12px}' +
-    '.total-num{font-size:36px;font-weight:300;color:#1E293B}' +
+    '.card{background:#fff;border:1px solid #E2E8F0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:14px 16px;margin-bottom:12px}' +
+    '.total-num{font-size:40px;font-weight:600;color:#0F766E}' +
     '.total-label{font-size:12px;color:#64748B}' +
-    '.row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F1F5F9}' +
+    '.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F1F5F9}' +
     '.row:last-child{border-bottom:none}' +
-    '.count{font-size:18px;font-weight:500}' +
-    '.tag{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}' +
+    '.count{font-size:18px;font-weight:600}' +
+    '.tag{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}' +
     '.tag-pend{background:#C2410C} .tag-aprob{background:#15803D} .tag-rech{background:#B91C1C}' +
     '.label-name{color:#3c4043;display:flex;align-items:center}' +
     '.footer{font-size:11px;color:#94A3B8;text-align:center;padding-top:12px;border-top:1px solid #E2E8F0;margin-top:12px}' +

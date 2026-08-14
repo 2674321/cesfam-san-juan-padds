@@ -74,19 +74,19 @@ function _pintarTiraPrioridad(sh, row, p) {
 function buscarEnPacientes() {
   var html =
 '<html><head><base target="_top"><style>' +
-'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:0;color:#202124;font-size:14px;background:#fff}' +
+'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:0;color:#202124;font-size:14px;background:#F1F5F9}' +
 '.bar{position:sticky;top:0;background:#fff;padding:12px 12px 8px;border-bottom:1px solid #E2E8F0;z-index:10}' +
 '.bar input{width:100%;box-sizing:border-box;padding:10px 12px;font-size:14px;border:2px solid #CBD5E1;border-radius:8px;outline:none}' +
 '.bar input:focus{border-color:#0F766E}' +
 '.bar .info{font-size:11px;color:#64748B;margin-top:4px;text-align:right}' +
-'#res{overflow-y:auto;padding:4px 0}' +
-'.it{padding:8px 12px;border-bottom:1px solid #F1F5F9;cursor:pointer}' +
-'.it:hover{background:#CCFBF1}' +
+'#res{overflow-y:auto;padding:6px}' +
+'.it{background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer}' +
+'.it:hover{background:#CCFBF1;border-color:#99F6E4}' +
 '.it .nom{font-size:14px;font-weight:500;color:#1a1a1a;line-height:1.3}' +
 '.it .det{font-size:12px;color:#64748B;margin-top:2px}' +
 '.it .det span{margin-right:12px}' +
 '.it .rut{font-family:Consolas,monospace;font-size:12px;color:#0F766E}' +
-'.it .tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:500}' +
+'.it .tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:500}' +
 '.tag-v{background:#DCFCE7;color:#15803D}.tag-f{background:#FCE7F3;color:#B91C1C}.tag-e{background:#FFEDD5;color:#C2410C}.tag-s{background:#F3E8FF;color:#7E22CE}.tag-p{background:#FEF3C7;color:#B45309}' +
 '.vacio{padding:40px 12px;text-align:center;color:#94A3B8;font-size:13px}' +
 '</style></head><body>' +
