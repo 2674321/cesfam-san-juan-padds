@@ -293,6 +293,7 @@ function agregarPaciente() {
   for (var c = 0; c < lc; c++) {
     if (c === COL.ID - 1) { blank.push(num); continue }
     if (c === COL.VITAL - 1) { blank.push('VIGENTE'); continue }
+    if (c === COL.SECTOR - 1) { blank.push('PENDIENTE'); continue }
     blank.push('')
   }
   sh.getRange(nr, 1, 1, lc).setValues([blank])

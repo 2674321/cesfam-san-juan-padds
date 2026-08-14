@@ -626,6 +626,11 @@ function _ingresarDesdeLista(row) {
   var nombre = String(sh.getRange(row, cols.nombre).getValue() || '').trim().toUpperCase()
   var apP = cols.apPaterno ? String(sh.getRange(row, cols.apPaterno).getValue() || '').trim().toUpperCase() : ''
   var apM = cols.apMaterno ? String(sh.getRange(row, cols.apMaterno).getValue() || '').trim().toUpperCase() : ''
+  // Separar el nombre en NOMBRE/APELLIDO/APELLIDO 2 para no editarlo a mano.
+  var _div = _dividirNombreApellidos(nombre, apP, apM)
+  nombre = _div.nombre
+  apP = _div.apellido
+  apM = _div.apellido2
   var dir = cols.direccion ? String(sh.getRange(row, cols.direccion).getValue() || '').trim() : ''
   var tel = cols.telefono ? String(sh.getRange(row, cols.telefono).getValue() || '').trim() : ''
   var deriv = cols.derivado ? String(sh.getRange(row, cols.derivado).getValue() || '').trim() : ''
@@ -633,10 +638,11 @@ function _ingresarDesdeLista(row) {
 
   pac.getRange(fila, COL.ID).setValue(id)
   pac.getRange(fila, COL.VITAL).setValue('VIGENTE')
+  pac.getRange(fila, COL.SECTOR).setValue('PENDIENTE')
   pac.getRange(fila, COL.RUN).setValue(runN)
   if (nombre) pac.getRange(fila, COL.NOMBRE).setValue(nombre)
   if (apP) pac.getRange(fila, COL.APELLIDO).setValue(apP)
-  if (apM) pac.getRange(fila, COL.APELLIDO2).setValue(apM)
+  pac.getRange(fila, COL.APELLIDO2).setValue(apM)
   if (dir) pac.getRange(fila, COL.DIRECCION).setValue(dir.toUpperCase())
   if (tel) pac.getRange(fila, COL.TELEFONO).setValue(tel)
 
