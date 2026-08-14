@@ -663,7 +663,7 @@ function _ingresarDesdeLista(row) {
   SpreadsheetApp.flush()
 
   try {
-    var _nPre = _limpiarFilasVaciasLoop(pac, 4)
+    var _nPre = _compactarPacientes(pac) + _limpiarFilasVaciasLoop(pac, 4)
     _log(ss, 'Pacientes', '_ingresarDesdeLista', 'ok',
       'fila=' + fila + ' lr=' + lr + ' maxRows=' + pac.getMaxRows() + ' vaciasEliminadas=' + _nPre)
   } catch (eV) {}

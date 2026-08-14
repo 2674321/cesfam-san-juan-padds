@@ -773,7 +773,7 @@ function _batchCopiarFormularios(formRows) {
   }
 
   try {
-    var _nPre2 = _limpiarFilasVaciasLoop(pac, 4)
+    var _nPre2 = _compactarPacientes(pac) + _limpiarFilasVaciasLoop(pac, 4)
     _log(ss, 'Pacientes', '_batchCopiarFormularios', 'ok',
       'nr=' + nr + ' lr=' + lr + ' nuevos=' + newRows.length + ' insertadas=' + insertadas +
       ' maxRows=' + pac.getMaxRows() + ' vaciasEliminadas=' + _nPre2)
