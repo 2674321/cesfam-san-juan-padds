@@ -544,11 +544,12 @@ function _flashFila(rng, color) {
   } catch (eF) {}
 }
 
-// Parpadeo único para muchas filas a la vez (buscador/filtros): pinta en color,
-// pausa y restaura los fondos originales. Ignora el pedido si hay más de 400.
+// Parpadeo para muchas filas a la vez (buscador/filtros): 2 pulsos color→blanco
+// y restaura los fondos originales. Ignora el pedido si hay más de 400 filas.
 function _flashFilas(sh, filas, color, milis) {
   try {
     if (!filas || filas.length === 0 || filas.length > 400) return
+    console.log('_flashFilas: ' + filas.length + ' filas')
     var lc = sh.getLastColumn()
     var chunks = []
     var start = filas[0], prev = filas[0], n = 1
@@ -562,10 +563,15 @@ function _flashFilas(sh, filas, color, milis) {
       var rg = sh.getRange(chunks[c][0], 1, chunks[c][1], lc)
       rngs.push([rg, rg.getBackgrounds()])
     }
-    for (var c2 = 0; c2 < rngs.length; c2++) rngs[c2][0].setBackground(color)
-    Utilities.sleep(milis || 350)
-    for (var c3 = 0; c3 < rngs.length; c3++) rngs[c3][0].setBackgrounds(rngs[c3][1])
-  } catch (eF) {}
+    var ms = milis || 250
+    for (var p = 0; p < 2; p++) {
+      for (var c2 = 0; c2 < rngs.length; c2++) rngs[c2][0].setBackground(color)
+      Utilities.sleep(ms)
+      for (var c3 = 0; c3 < rngs.length; c3++) rngs[c3][0].setBackground('#FFFFFF')
+      Utilities.sleep(ms)
+    }
+    for (var c4 = 0; c4 < rngs.length; c4++) rngs[c4][0].setBackgrounds(rngs[c4][1])
+  } catch (eF) { console.error('_flashFilas: ' + eF.message) }
 }
 
 function _fmtCeldaParaComparar(val) {
