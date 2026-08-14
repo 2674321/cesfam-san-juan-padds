@@ -34,7 +34,7 @@ function onOpen() {
       .addItem('🪪 Formatear RUN', 'formatearRUTPacientes')
       .addSeparator()
       .addItem('🔡 Ordenar (A-Z)', 'ordenarPacientes')
-      .addItem('🔢 Renumerar filas', 'reindexarPacientes')
+      .addItem('🔢 Renumerar IDs', 'reindexarPacientes')
       .addItem('🧹 Depurar duplicados', 'depurarDuplicados')
       .addSeparator()
       .addItem('🎨 Formatear hoja', 'formatearDatos')
@@ -63,7 +63,7 @@ function onOpen() {
     .addSeparator()
     .addItem('✅ Aprobar', 'aprobarFormularios')
     .addItem('❌ Rechazar', 'rechazarFormularios')
-    .addItem('🧹 Limpiar', 'limpiarFormulariosAprobados')
+    .addItem('🧹 Limpiar procesados', 'limpiarFormulariosAprobados')
     .addSeparator()
     .addItem('⚙️ Recepción automática', 'configurarTriggerFormulario')
     .addToUi()
@@ -96,7 +96,10 @@ function onOpen() {
 }
 
 function rehacerMenus() {
-  try { onOpen() } catch (e) {
+  try {
+    onOpen()
+    SpreadsheetApp.getActiveSpreadsheet().toast('Menús recargados', 'PADDS', 2)
+  } catch (e) {
     SpreadsheetApp.getUi().alert('No se pudo recargar: ' + e.message)
   }
 }
@@ -299,7 +302,7 @@ function _organizarHojasSinConfirmar(ss) {
   } catch (e) {}
 
   ss.toast((renombradas > 0 ? renombradas + ' pestañas renombradas · ' : '') +
-    presentes + ' hojas coloreadas. Las demás no se tocaron', '', 5)
+    presentes + ' hojas coloreadas. Las demás no se tocaron', 'PADDS', 5)
 }
 
 // nuevo nombre canónico. Solo toca fórmulas: nunca borra ni crea hojas.

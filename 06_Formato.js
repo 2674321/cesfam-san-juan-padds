@@ -23,21 +23,6 @@ function _agregarColumnasFaltantes(ss, sh, targetCols) {
   return targetCols
 }
 
-function agregarColumnaInsulinoDependiente() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) { ss.toast('No existe la hoja ' + HOJA_PAC, 'PADDS', 3); return }
-  var migro = false
-  try { migro = _asegurarColumnaInsulino(sh) } catch(e) {}
-  if (migro) {
-    _formatearDatosSinConfirmar(sh, ss)
-    try { crearDashboard() } catch(eD) {}
-    ss.toast('Columna INSULINO DEPENDIENTE agregada y hoja formateada', 'PADDS', 4)
-  } else {
-    ss.toast('La columna INSULINO DEPENDIENTE ya existe', 'PADDS', 3)
-  }
-}
-
 function _repintarSinConfirmar(sh, ss) {
   ss.toast('Preparando reconstrucción funcional…', 'PADDS', 1)
 
@@ -92,7 +77,7 @@ function _restaurarVisualSinConfirmar(sh, ss) {
 function formatearDatos() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var chk = _hojaPacientesValida(ss)
-  if (!chk.ok) { ss.toast(chk.msg, '⚠ Estructura de la hoja incorrecta', 6); return }
+  if (!chk.ok) { ss.toast(chk.msg, 'Estructura de la hoja incorrecta', 6); return }
   var sh = chk.sh
   var ui = SpreadsheetApp.getUi()
   var r = ui.alert('Formatear datos de ' + HOJA_PAC,
@@ -150,7 +135,7 @@ function _formatearDatosSinConfirmar(sh, ss) {
 function repararFormatoPacientes() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var chk = _hojaPacientesValida(ss)
-  if (!chk.ok) { ss.toast(chk.msg, '⚠ Estructura de la hoja incorrecta', 6); return }
+  if (!chk.ok) { ss.toast(chk.msg, 'Estructura de la hoja incorrecta', 6); return }
   var sh = chk.sh
   var ui = SpreadsheetApp.getUi()
   var r = ui.alert('Reparar formato de ' + HOJA_PAC,
@@ -1472,7 +1457,7 @@ function crearInstrucciones() {
 function crearDashboard() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var pac = ss.getSheetByName(HOJA_PAC)
-  if (!pac) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Error', 4); return }
+  if (!pac) {   ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Pacientes', 4); return }
   ss.toast('Generando Dashboard…', 'PADDS', 1)
 
   var old = ss.getSheetByName('Dashboard')
@@ -2094,6 +2079,7 @@ function configurarResaltadoFila() {
       keep.push(rule)
       sh.setConditionalFormatRules(keep)
     }
+    try { ss.toast('Resaltado de fila activa configurado en ' + sheets.length + ' hoja(s)', 'PADDS', 3) } catch(eT) {}
   } catch(e) {
     try { ss.toast('Error al configurar resaltado: ' + e.message, 'PADDS', 5) } catch(e5) {}
   }
