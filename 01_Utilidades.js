@@ -347,6 +347,27 @@ function _norm(s) {
 
 function _pad2(n) { var s = String(n); return s.length < 2 ? '0' + s : s }
 
+// Sistema de diseño compartido para las ventanas HTML (sidebars/dialogs).
+// Devuelve las DECLARACIONES CSS (sin la etiqueta <style>): úsalas con
+// '<style>' + _uiCss() + '...' + '</style>'. Alineado con _UI de la hoja.
+function _uiCss() {
+  return 'body{font-family:Arial,"Segoe UI",Roboto,sans-serif;margin:0;padding:16px;color:#1E293B;font-size:14px;background:#F1F5F9}' +
+    '.h{font-size:16px;font-weight:600;color:#1E293B;margin:0 0 4px}' +
+    '.sub{font-size:12px;color:#64748B;margin-bottom:14px}' +
+    '.card{background:#fff;border:1px solid #E2E8F0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:12px 14px;margin-bottom:12px}' +
+    '.li{padding:4px 0;border-bottom:1px solid #F1F5F9}.li:last-child{border-bottom:none}' +
+    '.dim{color:#64748B;font-size:12px}' +
+    '.ok{color:#15803D}.warn{color:#C2410C}.err{color:#B91C1C}' +
+    '.btn{display:inline-block;padding:9px 14px;background:#1E293B;color:#fff;border:none;border-radius:6px;font-size:13px;font-family:inherit;cursor:pointer;text-align:center}' +
+    '.btn:hover{background:#0F172A}.btn:disabled{opacity:.55;cursor:default}' +
+    '.btn-sec{background:#fff;color:#1E293B;border:1px solid #CBD5E1}.btn-sec:hover{background:#F1F5F9}' +
+    '.chip{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500;margin:2px 4px 2px 0}' +
+    '.input{width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #CBD5E1;border-radius:8px;font-size:14px;outline:none;font-family:inherit}' +
+    '.input:focus{border-color:#0F766E}' +
+    '.row-l{display:flex;justify-content:space-between;align-items:center}' +
+    '::-webkit-scrollbar{width:9px}::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:9px}'
+}
+
 function fmtFecha(d) {
   return _pad2(d.getDate()) + '/' + _pad2(d.getMonth()+1) + '/' + d.getFullYear()
 }
