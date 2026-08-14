@@ -351,7 +351,7 @@ function _pad2(n) { var s = String(n); return s.length < 2 ? '0' + s : s }
 // Devuelve las DECLARACIONES CSS (sin la etiqueta <style>): úsalas con
 // '<style>' + _uiCss() + '...' + '</style>'. Alineado con _UI de la hoja.
 function _uiCss() {
-  return 'body{font-family:Arial,"Segoe UI",Roboto,sans-serif;margin:0;padding:16px;color:#1E293B;font-size:14px;background:#F1F5F9}' +
+  return 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;padding:16px;color:#1E293B;font-size:14px;background:#F1F5F9}' +
     '.h{font-size:16px;font-weight:600;color:#1E293B;margin:0 0 4px}' +
     '.sub{font-size:12px;color:#64748B;margin-bottom:14px}' +
     '.card{background:#fff;border:1px solid #E2E8F0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:12px 14px;margin-bottom:12px}' +
