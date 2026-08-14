@@ -2097,3 +2097,98 @@ function configurarResaltadoFila() {
     try { ss.toast('Error al configurar resaltado: ' + e.message, 'PADDS', 5) } catch(e5) {}
   }
 }
+
+// ════════════════════════════════════════════════════════
+// ACTUALIZACIÓN MAESTRA (menú 🏠 Inicio → 🔄 Actualizar todo)
+// ════════════════════════════════════════════════════════
+
+// Deja todo el sistema al día en una sola acción, en orden de dependencias:
+//   1) listas/opciones (_Opciones) → 2) hojas fuente (Pacientes, Ingresos,
+//      Recepción) → 3) valores derivados (Dashboard) → 4) resaltado de fila.
+// Cada paso corre en su propio try/catch: un error (ej. hoja faltante) no
+// detiene los demás; el resumen final muestra qué se actualizó y qué falló.
+// Reutiliza funciones existentes; no reimplementa ninguna lógica.
+function actualizarSistemaCompleto() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  var pasos = []
+
+  ss.toast('Actualizando todo… (Pacientes · Ingresos · Recepción · Dashboard)', '🔄 Actualizar todo', 3)
+
+  // 1. Listas de dropdowns (_Opciones con chips de color). Se deja la caché
+  //    lista para que el formateo de Pacientes no la reconstruya de nuevo.
+  try {
+    _optsRefsCache = null
+    _optsRefsCache = _sincronizarOpciones(ss)
+    pasos.push('Opciones: ✅')
+  } catch (eO) {
+    pasos.push('Opciones: ✘ ' + eO.message)
+  }
+
+  // 2. Pacientes: diseño completo (datos, estados, CF acotada, validaciones,
+  //    tooltips y recálculo de prioridades/vigencias).
+  try {
+    var chkP = _hojaPacientesValida(ss)
+    if (chkP.ok) {
+      _formatearDatosSinConfirmar(chkP.sh, ss)
+      pasos.push('Pacientes: ✅')
+    } else {
+      pasos.push('Pacientes: ⚠️ ' + chkP.msg)
+    }
+  } catch (eP) {
+    pasos.push('Pacientes: ✘ ' + eP.message)
+  }
+
+  // 3. Ingresos: diseño, CF y corrección de datos (impl sin diálogos).
+  try {
+    _corregirIngresosImpl(ss)
+    pasos.push('Ingresos: ✅')
+  } catch (eI) {
+    pasos.push('Ingresos: ✘ ' + eI.message)
+  }
+
+  // 4. Recepción Formulario Profesional: formato, listas alineadas, CF acotada
+  //    y trigger de recepción (idempotente, no borra formularios).
+  try {
+    crearFormularioBase()
+    pasos.push('Recepción: ✅')
+  } catch (eR) {
+    pasos.push('Recepción: ✘ ' + eR.message)
+  }
+
+  // 5. Dashboard: valores derivados (vigencias y alertas). Si la hoja no
+  //    existe se crea; si existe pero le falta la tabla VIGENCIAS se avisa,
+  //    porque recrearla sobrescribiría el diseño actual (decisión del usuario).
+  try {
+    var shD = ss.getSheetByName('Dashboard')
+    if (!shD) {
+      crearDashboard()
+      pasos.push('Dashboard: ✅ (creado)')
+    } else {
+      var _dVals = shD.getDataRange().getValues()
+      var _tieneVig = false
+      for (var _dv2 = 0; _dv2 < _dVals.length; _dv2++) {
+        if (String(_dVals[_dv2][0] || '').trim() === 'Control / Area') { _tieneVig = true; break }
+      }
+      if (!_tieneVig) {
+        pasos.push('Dashboard: ⚠️ falta la tabla VIGENCIAS (corre 📊 Crear Dashboard)')
+      } else {
+        actualizarDashboard()
+        pasos.push('Dashboard: ✅')
+      }
+    }
+  } catch (eD) {
+    pasos.push('Dashboard: ✘ ' + eD.message)
+  }
+
+  // 6. Resaltado de fila activa (Pacientes y Recepción).
+  try {
+    configurarResaltadoFila()
+    pasos.push('Resaltado: ✅')
+  } catch (eH) {
+    pasos.push('Resaltado: ✘ ' + eH.message)
+  }
+
+  try { _log(ss, 'Sistema', 'actualizarSistemaCompleto', 'ok', pasos.join(' · ')) } catch (eL) {}
+
+  ss.toast(pasos.join('\n'), '🔄 Actualizar todo', 12)
+}

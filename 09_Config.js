@@ -7,6 +7,8 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi()
 
   ui.createMenu('🏠 Inicio')
+    .addItem('🔄 Actualizar todo', 'actualizarSistemaCompleto')
+    .addSeparator()
     .addItem('📊 Centro de control', 'abrirCentroControl')
     .addItem('🔎 Buscar (global)', 'buscarPacienteGlobal')
     .addSeparator()
