@@ -151,7 +151,7 @@ function _ingAplicarFormato(sh, d) {
 
   sh.getRange(desde, 1, total, lcF)
     .setFontFamily(_UI.font).setFontSize(10)
-    .setVerticalAlignment('middle').setFontColor('#202124')
+    .setVerticalAlignment('middle').setFontColor('#1E293B')
   sh.setRowHeights(desde, total, _UI.rowH)
 
   if (cols.run) sh.getRange(desde, cols.run, total, 1).setHorizontalAlignment('center')
@@ -437,7 +437,7 @@ function _ingFormatearFila(sh, row, numRows, d) {
     .setHorizontalAlignments(als)
     .setNumberFormats(fmts)
     .setFontFamily(_UI.font).setFontSize(10)
-    .setVerticalAlignment('middle').setFontColor('#202124')
+    .setVerticalAlignment('middle').setFontColor('#1E293B')
     .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
 
   if (cols.accion) {

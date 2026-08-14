@@ -248,7 +248,7 @@ var _OPC_BG = {
   'CUIDADORA REMUNERADA': '#57534E', 'AUSENCIA': '#64748B',
   'EMPA': '#0369A1', 'EMPAM': '#7E22CE',
   'BENEFICIARIO': '#15803D', 'INGRESADO': '#0F766E', 'NO INGRESA': '#B91C1C',
-  'NO APLICA': '#64748B', 'EN ESPERA': '#B45309', 'RECHAZA': '#B91C1C',
+  'NO APLICA': '#64748B', 'EN ESPERA': '#0E7490', 'RECHAZA': '#B91C1C',
   'BASTON': '#0E7490', 'ANDADOR': '#0E7490', 'SILLA RUEDAS': '#0E7490', 'MULETAS': '#0E7490',
   'G': '#0369A1', 'XG': '#7E22CE', 'XXG': '#881337', 'S': '#0E7490',
   'VESICAL': '#15803D', 'SUPRAPUBICA': '#7E22CE',
@@ -554,11 +554,11 @@ var HOJAS_SISTEMA = [
 
 var S = {
   header: { bg: '#1E293B', fg: '#fff', sz: 12 },
-  sub:    { bg: ['#334155','#0F766E','#115E59','#1E293B','#3A5B6E','#B45309'] },
+  sub:    { bg: ['#334155','#0F766E','#115E59','#1E293B','#334155','#B45309'] },
   slots:  {
-    abreviadas: { bg: '#FEF3C7', fg: '#92400E' },
-    vdi:        { bg: '#DCFCE7', fg: '#166534' },
-    colacion:   { bg: '#FCE7F3', fg: '#9D174D' },
+    abreviadas: { bg: '#FEF3C7', fg: '#B45309' },
+    vdi:        { bg: '#DCFCE7', fg: '#15803D' },
+    colacion:   { bg: '#FCE7F3', fg: '#BE185D' },
     registro:   { bg: '#F1F5F9', fg: '#475569' },
   },
 }
@@ -609,7 +609,7 @@ var _UI = {
   zebraBg:  ['#FFFFFF', '#F8FAFC'],
   frozenBg: ['#F8FAFC', '#EEF2F7'],
   chipCard: '#F8FAFC', // fondo de etiquetas de tarjetas
-  tabBW:    '#99F6E4', // color de pestaña del sistema (teal claro)
+  tabBW:    '#0F766E', // color de pestaña del sistema (teal, coincide con el organizador de pestañas)
   okBg: '#DCFCE7', okFg: '#15803D',
   warnBg: '#FEF3C7', warnFg: '#B45309',
   errBg: '#FEE2E2', errFg: '#B91C1C',

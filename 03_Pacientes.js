@@ -171,7 +171,7 @@ function _navegarAFila(fila) {
   if (!sh) return
   var rng = sh.getRange(fila, 1, 1, sh.getLastColumn())
   sh.setActiveRange(rng)
-  ss.toast('Paciente en la fila ' + fila, 'PADDS', 2)
+  ss.toast('Paciente en la fila ' + fila, 'Pacientes', 2)
 }
 
 function aplicarFiltroBusqueda(optTerm) {
@@ -380,7 +380,7 @@ function _colorearFechasFila(row, sh, lc, _params, _diasAviso, rowData, soloCols
 function _aplicarVitalFila(row, sh, lc, vitalUp) {
   var st = _VITAL_ROW_COLORS[vitalUp] || {}
   sh.getRange(row, 1, 1, lc)
-    .setFontColor(st.fg || '#000000')
+    .setFontColor(st.fg || _UI.ink)
     .setStrikethrough(!!st.strike)
     .setFontStyle(st.italic ? 'italic' : 'normal')
   if (vitalUp === 'FALLECIDO') sh.getRange(row, 1).setFontWeight('bold')
@@ -663,7 +663,7 @@ function diagnosticarFilasExtra() {
   var resumen = 'Última fila con ID: ' + ultimaId + ' (de ' + lr + ' filas)\n' +
     lineas.join('\n') + '\n\nFilas sin ID al final: ' + sinId +
     '\n\n🧹 Córrelo: Pacientes → Datos → Limpiar filas vacías'
-  ss.toast(resumen, 'Diagnóstico', 10)
+  ss.toast(resumen, 'PADDS', 10)
 }
 
 // ─── LIMPIAR FILAS VACÍAS AL FINAL (Pacientes) ─────────────────────────────
@@ -694,7 +694,7 @@ function _colorearPrioridad(sh, lr) {
     var k = String(data[r][0] || '').trim().toUpperCase()
     var m = pmap[k] || null
     bgs.push([m ? m[0] : null])
-    fgs.push([m ? m[1] : '#000000'])
+    fgs.push([m ? m[1] : _UI.ink])
     var t = _PRIORIDAD_TIRA_COLORS[k] || _PRIORIDAD_TIRA_COLORS['N/A']
     tBgs.push([t.bg])
     tFgs.push([t.fg])
@@ -834,7 +834,7 @@ function formatearRUTPacientes(confirmado) {
       var nota = (val && val.indexOf('-') > 0 && val.length >= 4) ? (_notaRUN(val) || '') : ''
       if (nota) invalidos++
           bgs.push([nota ? '#FEE2E2' : ((i + 4) % 2 === 0 ? _UI.zebraBg[0] : _UI.zebraBg[1])])
-          fgs.push([nota ? '#B91C1C' : '#000000'])
+          fgs.push([nota ? '#B91C1C' : '#1E293B'])
       if (String(notes[i][0] || '') !== nota) sh.getRange(i + 4, col).setNote(nota || null)
     }
     sh.getRange(4, col, rows, 1).setBackgrounds(bgs).setFontColors(fgs)

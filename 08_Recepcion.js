@@ -62,7 +62,7 @@ function _estiloFila(sh, row, lc) {
     fmts.push(c === 1 || c === 5 ? 'dd/mm/yyyy hh:mm' : (c === 6 || c === 16 ? 'dd/mm/yyyy' : 'General'))
   }
   rng
-    .setFontFamily(_UI.font).setFontSize(10).setFontColor('#212121')
+    .setFontFamily(_UI.font).setFontSize(10).setFontColor('#1E293B')
     .setVerticalAlignment('middle')
     .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
     .setBackground(even ? '#FFFFFF' : '#F8FAFC')
@@ -330,7 +330,7 @@ rules.push(SpreadsheetApp.newConditionalFormatRule()
 
   rules.push(SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=AND($G5<>"",COUNTIF($G$5:$G,$G5)>1)')
-    .setBackground('#FEF3C7').setFontColor('#C2410C').setBold(true)
+    .setBackground('#FEF3C7').setFontColor('#B45309').setBold(true)
     .setRanges([sh.getRange(5, 7, maxRows - 4, 1)]).build())
   sh.setConditionalFormatRules(rules)
 
@@ -543,13 +543,13 @@ function aprobarFormularios() {
       } else if (estado === 'Gestionado') {
         if (!data[r][6] || String(data[r][6]).trim() === '') {
           sh.getRange(rowNum, 7).setNote('⚠️ Falta el RUN: complétalo y vuelve a aprobar')
-          sh.getRange(rowNum, 7).setBackground('#FEF3C7').setFontColor('#A16207').setFontWeight('bold')
+          sh.getRange(rowNum, 7).setBackground('#FEF3C7').setFontColor('#B45309').setFontWeight('bold')
           avisosAp.push('Fila ' + rowNum + ': falta el RUN (col. G).')
           continue
         }
         if (!data[r][7] || String(data[r][7]).trim() === '') {
           sh.getRange(rowNum, 8).setNote('⚠️ Falta el nombre: complétalo y vuelve a aprobar')
-          sh.getRange(rowNum, 8).setBackground('#FEF3C7').setFontColor('#A16207').setFontWeight('bold')
+          sh.getRange(rowNum, 8).setBackground('#FEF3C7').setFontColor('#B45309').setFontWeight('bold')
           avisosAp.push('Fila ' + rowNum + ': falta el NOMBRE (col. H).')
           continue
         }
@@ -832,7 +832,7 @@ function rechazarFormularios() {
     var ss = SpreadsheetApp.getActiveSpreadsheet()
     ss.toast('Rechazando formularios…', 'PADDS', 1)
     var sh = ss.getSheetByName(HOJA_FORM)
-    if (!sh) return
+    if (!sh) { SpreadsheetApp.getUi().alert('Primero crea la hoja de recepción (menú Formulario).'); return }
 
     var lr = sh.getLastRow()
     if (lr < 5) { ss.toast('No hay formularios para rechazar', 'Formulario', 3); return }
@@ -879,10 +879,10 @@ function rechazarFormularios() {
 function limpiarFormulariosAprobados() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_FORM)
-  if (!sh) return
+  if (!sh) { ss.toast('Primero crea la hoja de recepción (📝 Formulario → "📋 Crear hoja")', 'Formulario', 4); return }
   var lr = sh.getLastRow()
   var lc = sh.getLastColumn()
-  if (lr < 5) return
+  if (lr < 5) { ss.toast('No hay formularios procesados para limpiar', 'Formulario', 3); return }
 
   ss.toast('Buscando formularios procesados…', 'PADDS', 1)
   var data = sh.getRange(5, 1, lr - 4, lc).getValues()
@@ -897,7 +897,7 @@ function limpiarFormulariosAprobados() {
   }
 
   if (aLimpiar === 0) { ss.toast('No hay formularios gestionados o rechazados para limpiar', 'Formulario', 3); return }
-  if (ui.alert('Limpiar', '¿Eliminar ' + aLimpiar + ' formularios gestionados o rechazados?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return
+  if (ui.alert('Limpiar formularios procesados', '¿Eliminar ' + aLimpiar + ' formularios gestionados o rechazados?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return
 
   var grupos = [], start = -1
   for (var r = data.length - 1; r >= 0; r--) {
