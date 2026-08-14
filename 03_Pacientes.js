@@ -609,9 +609,9 @@ function recalcularTodo() {
 }
 
 // ─── DIAGNÓSTICO: FILAS "EXTRA" (basura) EN PACIENTES ──────────────────────
-// Inspecciona las últimas filas de Pacientes y detecta filas que solo tienen
-// FALSE/N/A (ocupan espacio y parecen vacías). Sirve para confirmar si la
-// "fila extra" de las transferencias es una fila de casillas sin marcar.
+// Inspecciona las últimas filas de Pacientes y detecta filas sin ID (columna A)
+// debajo del último paciente: son basura (casillas desmarcadas / N/A sueltos)
+// que ocupan espacio. El limpiador las elimina por el criterio del ID.
 
 function diagnosticarFilasExtra() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
@@ -623,27 +623,35 @@ function diagnosticarFilasExtra() {
   var filas = lr - desde + 1
   var data = sh.getRange(desde, 1, filas, lc).getValues()
 
-  var lineas = []
-  var soloBasura = 0
+  var ultimaId = 3
   for (var i = 0; i < filas; i++) {
-    var nF = 0, nNA = 0, nFals = 0, otros = []
+    var vId = Number(data[i][0])
+    if (!isNaN(vId) && vId > 0) ultimaId = desde + i
+  }
+
+  var lineas = []
+  var sinId = 0
+  for (var i2 = 0; i2 < filas; i2++) {
+    var nF = 0, nNA = 0, nFalse = 0, otros = []
     for (var c = 0; c < lc; c++) {
-      var v = data[i][c]
+      var v = data[i2][c]
       if (v == null || String(v).trim() === '') continue
       var s = String(v).trim()
       if (s === 'N/A') { nNA++; continue }
-      if (s === 'FALSE' || s === 'false' || v === false) { nFals++; continue }
+      if (s === 'FALSE' || s === 'false' || v === false) { nFalse++; continue }
       nF++
       if (otros.length < 2) otros.push(s)
     }
-    var esBasura = (nF === 0)
-    if (esBasura) soloBasura++
-    lineas.push('Fila ' + (desde + i) + ': datos=' + nF + ' N/A=' + nNA + ' FALSE=' + nFals +
-      (esBasura ? ' → BASURA' : (otros.length ? ' · [' + otros.join(', ') + ']' : '')))
+    var filaN = desde + i2
+    var esBasura = filaN > ultimaId
+    if (esBasura) sinId++
+    lineas.push('Fila ' + filaN + ': datos=' + nF + ' N/A=' + nNA + ' casillas=' + nFalse +
+      (esBasura ? ' → SIN ID (basura)' : (otros.length ? ' · id=[' + otros.join(', ') + ']' : '')))
   }
 
-  var resumen = 'Últimas filas de Pacientes (hasta la ' + lr + '):\n' + lineas.join('\n') +
-    '\n\nFilas basura (solo FALSE/N/A): ' + soloBasura
+  var resumen = 'Última fila con ID: ' + ultimaId + ' (de ' + lr + ' filas)\n' +
+    lineas.join('\n') + '\n\nFilas sin ID al final: ' + sinId +
+    '\n\n🧹 Córrelo: Pacientes → Datos → Limpiar filas vacías'
   ss.toast(resumen, 'Diagnóstico', 10)
   try {
     SpreadsheetApp.getUi().alert('Diagnóstico filas extra', resumen, SpreadsheetApp.getUi().ButtonSet.OK)
@@ -659,10 +667,10 @@ function limpiarFilasVaciasPacientes() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
   if (!sh) { ss.toast('No se encontró la hoja Pacientes', 'Pacientes', 4); return }
-  var total = _limpiarFilasVaciasLoop(sh, 4)
+  var total = _compactarPacientes(sh) + _limpiarFilasVaciasLoop(sh, 4)
   ss.toast(total > 0
-    ? 'Se eliminaron ' + total + ' fila(s) vacía(s) de Pacientes'
-    : 'Pacientes está limpio: no había filas vacías al final', 'Pacientes', 4)
+    ? 'Se eliminaron ' + total + ' fila(s) sin ID / basura del final de Pacientes'
+    : 'Pacientes está limpio: no había filas extra al final', 'Pacientes', 4)
 }
 
 function _colorearPrioridad(sh, lr) {

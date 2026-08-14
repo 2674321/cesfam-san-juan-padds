@@ -76,10 +76,10 @@ function _borrarFilasVacias(sh, desdeFila) {
         var v = vals[r][c]
         if (v == null) continue
         var s = String(v).trim()
-        // Celdas de casilla (checkbox) sin marcar devuelven FALSE, y valores
-        // vacíos de formularios pueden quedar como "N/A": una fila que SOLO
-        // tiene FALSE/N/A es una fila basura (se ve vacía) y debe poder borrarse.
-        if (s === '' || s === 'N/A' || s === 'FALSE' || s === 'false' || v === false) continue
+        // Celdas con validación de casilla (checkbox) desmarcadas devuelven
+        // FALSE: en la hoja se ven desmarcadas (sin dato), así que NO cuentan
+        // como contenido. El resto (incluido "N/A", que es un dato real) sí.
+        if (s === '' || s === 'FALSE' || s === 'false' || v === false) continue
         esVacia = false
         break
       }
@@ -123,6 +123,33 @@ function _limpiarFilasVaciasLoop(sh, desdeFila) {
     if (n === 0) break
   }
   return total
+}
+
+// Compacta la hoja Pacientes: borra TODA fila que esté debajo de la última
+// fila con ID (columna A), porque en Pacientes cada fila es un paciente y
+// cualquier fila sin ID al final es basura (casillas desmarcadas, N/A sueltos,
+// filas huérfanas de versiones antiguas). Nunca toca un paciente.
+function _compactarPacientes(sh) {
+  if (!sh) return 0
+  var lr = sh.getLastRow()
+  if (lr < 4) return 0
+  var ids = sh.getRange(4, 1, lr - 3, 1).getValues()
+  var ultimoIdx = -1
+  for (var i = ids.length - 1; i >= 0; i--) {
+    var v = Number(ids[i][0])
+    if (!isNaN(v) && v > 0) { ultimoIdx = i; break }
+  }
+  if (ultimoIdx < 0) return 0
+  var ultimaFila = 4 + ultimoIdx
+  if (ultimaFila >= lr) return 0
+  var n = lr - ultimaFila
+  try { sh.deleteRows(ultimaFila + 1, n); return n } catch (eC) {
+    try {
+      sh.getRange(ultimaFila + 1, 1, Math.min(n, 1), 1).breakApart()
+      sh.deleteRows(ultimaFila + 1, n)
+      return n
+    } catch (eC2) { return 0 }
+  }
 }
 
 function _normalizarSexo(v) {
