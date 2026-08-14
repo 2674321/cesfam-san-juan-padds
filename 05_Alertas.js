@@ -7,11 +7,20 @@
 function mostrarAlertas() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   ss.toast('Generando alertas…', 'PADDS', 1)
+  _mostrarAlertasTareas(false)
+}
+
+// ─── MOTOR COMPARTIDO V4 ──────────────────────────────────────────────────
+// Calcula vencidos / próximos / pendientes / urgentes de Pacientes. Lo usan
+// Alertas, Tareas y el Centro de Control (no se duplica la lógica).
+// Devuelve null si la hoja no existe; en el cuerpo usa ss para la zona horaria.
+function _calcularAlertas() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) { ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Pacientes', 4); return }
+  if (!sh) { ss.toast('No se encontró la hoja ' + HOJA_PAC + '. Revisa que exista.', 'Pacientes', 4); return null }
 
   var lr = sh.getLastRow()
-  if (lr < 4) { ss.toast('Sin datos de pacientes para generar alertas', 'Alertas', 2); return }
+  if (lr < 4) { ss.toast('Sin datos de pacientes para generar alertas', 'Alertas', 2); return null }
 
   var cols = [2, 3, 4, 5, 6, 8, 110]
   var lc = sh.getLastColumn()
@@ -108,97 +117,7 @@ function mostrarAlertas() {
   var _sort = function(a, b) { return a.label.localeCompare(b.label) }
   urgentes.sort(_sort); vencidos.sort(_sort); porVencer.sort(_sort); pendientes.sort(_sort)
 
-  _showAlertasSidebar(urgentes, vencidos, porVencer, pendientes, params)
+  return { urgentes: urgentes, vencidos: vencidos, porVencer: porVencer, pendientes: pendientes, params: params }
 }
 
-function _showAlertasSidebar(urgentes, vencidos, porVencer, pendientes, params) {
-  var total = urgentes.length + vencidos.length + porVencer.length + pendientes.length
-  var dias = params ? (params['DIAS_AVISO'] != null ? Number(params['DIAS_AVISO']) : 30) : 30
-  var part = []
 
-  part.push('<style>' + _uiCss() +
-    'body{padding:0;overflow-x:hidden}' +
-    '.hdr{padding:14px 16px 4px}' +
-    '.hdr h2{margin:0;font-size:18px;color:#1E293B}' +
-    '.hdr .sub{font-size:12px;color:#64748B;margin-top:2px}' +
-    '.info{font-size:11px;color:#64748B;margin:8px 16px 4px;padding:6px 10px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;line-height:1.6}' +
-    '.info i{font-style:normal;padding:1px 5px;border-radius:4px;font-weight:600}' +
-    '.i-r{color:#B91C1C}.i-o{color:#C2410C}.i-y{color:#B45309}' +
-    'h3{font-size:13px;margin:12px 16px 4px;padding:6px 10px;border-left:3px solid #CBD5E1;background:#fff;border-radius:0 8px 8px 0;font-weight:600;cursor:pointer;user-select:none}' +
-    'h3:after{content:" \\25BC";font-size:10px;float:right;opacity:.6}' +
-    'h3.collapsed:after{content:" \\25B6"}' +
-    '.h-r{border-color:#B91C1C;color:#B91C1C}' +
-    '.h-o{border-color:#C2410C;color:#C2410C}' +
-    '.h-y{border-color:#B45309;color:#B45309}' +
-    'table{width:100%;border-collapse:collapse}' +
-    'td{padding:5px 16px;border-bottom:1px solid #F1F5F9;font-size:12px;line-height:1.4}' +
-    'td.l{font-weight:600;width:44%}' +
-    'td.l a{color:#1E293B;text-decoration:none;cursor:pointer}' +
-    'td.l a:hover{color:#0F766E;text-decoration:underline}' +
-    'td.c{color:#64748B;width:28%}' +
-    'td.r{color:#94A3B8;width:28%;text-align:right}' +
-    '.vacio{padding:30px 16px;text-align:center;color:#94A3B8;font-size:14px}' +
-    '.ftr{font-size:11px;color:#94A3B8;text-align:center;padding:10px 16px;border-top:1px solid #E2E8F0;margin-top:8px}' +
-    '</style>' +
-    '<script>' +
-    'function irAPaciente(fila){google.script.run._irAPaciente(fila)}' +
-    'function toggleSec(el){var n=el.nextElementSibling;if(n){n.style.display=n.style.display==="none"?"":"none";el.classList.toggle("collapsed")}}' +
-    '</script>')
-
-  part.push('<div class="hdr"><h2>Alertas</h2><div class="sub">' + total + ' pendiente' + (total !== 1 ? 's' : '') + ' · ' + dias + ' días de aviso</div></div>')
-
-  part.push('<div class="info">' +
-    '<i class="i-r">🔴 Vencido</i> superó meses · ' +
-    '<i class="i-o">🟠 Próximo</i> ≤ ' + dias + ' días · ' +
-    '<i class="i-y">🟡 Sin fecha</i> nunca registrado · ' +
-    '<i class="i-r">🔴 Prioritario</i> col B (SECTOR) o col 110 (PRIORIDAD)' +
-    '</div>')
-
-  function seccion(hCls, icono, titulo, items, cols, tooltip) {
-    if (!items.length) return
-    var collapsed = items.length > 10 ? ' collapsed' : ''
-    part.push('<h3 class="' + hCls + collapsed + '" title="' + _esc(tooltip || '') + '" onclick="toggleSec(this)">' + icono + ' ' + titulo + '</h3>')
-    part.push('<div class="tblwrap" style="display:' + (collapsed ? 'none' : '') + '"><table>')
-    for (var i = 0; i < items.length; i++) {
-      var it = items[i]
-      part.push('<tr title="' + _esc(it.tooltip || '') + '">')
-      part.push('<td class="l wrap"><a onclick="irAPaciente(' + _esc(it.fila) + ')" title="Ir a paciente">' + _esc(it.label) + '</a></td>')
-      if (cols === 2) {
-        part.push('<td class="c wrap" colspan="2">' + _esc(it.detalle || it.control || '') + '</td>')
-      } else if (cols === 3) {
-        part.push('<td class="c wrap">' + _esc(it.control) + '</td>')
-        part.push('<td class="r wrap">' + _esc(it.razon) + '</td>')
-      }
-      part.push('</tr>')
-    }
-    part.push('</table></div>')
-  }
-
-  seccion('h-r', '🔴', urgentes.length + ' paciente' + (urgentes.length !== 1 ? 's' : '') + ' prioritario' + (urgentes.length !== 1 ? 's' : ''), urgentes, 2,
-    'Paciente marcado Prioridad Naranjo/Urgente (B) o Prioridad General (110) = Urgente/Por Revisar')
-  seccion('h-r', '🔴', vencidos.length + ' vencido' + (vencidos.length !== 1 ? 's' : ''), vencidos, 3,
-    'Fecha del último control superó el máximo de meses (ver Parámetros)')
-  seccion('h-o', '🟠', porVencer.length + ' próximo' + (porVencer.length !== 1 ? 's' : '') + ' a vencer', porVencer, 3,
-    'Fecha dentro de los ' + dias + ' días de aviso configurados en Parámetros')
-  seccion('h-y', '🟡', pendientes.length + ' sin realizar', pendientes, 2,
-    'Nunca se ha registrado fecha para este control')
-
-  if (total === 0) {
-    part.push('<div class="vacio">Todo al día · sin alertas pendientes</div>')
-  }
-
-  part.push('<div class="ftr">' + new Date().toLocaleString() + '</div>')
-
-  SpreadsheetApp.getUi().showSidebar(
-    HtmlService.createHtmlOutput(part.join('')).setTitle('Alertas - PADDS 2026').setWidth(500).setHeight(540)
-  )
-}
-
-function _irAPaciente(fila) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sh = ss.getSheetByName(HOJA_PAC)
-  if (sh) {
-    sh.getRange(fila, 1).activate()
-    ss.toast('Paciente en la fila ' + fila, 'PADDS', 2)
-  }
-}
