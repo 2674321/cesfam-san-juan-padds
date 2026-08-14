@@ -171,7 +171,6 @@ function _navegarAFila(fila) {
   if (!sh) return
   var rng = sh.getRange(fila, 1, 1, sh.getLastColumn())
   sh.setActiveRange(rng)
-  if (fila >= 4 && fila <= sh.getLastRow()) _flashFila(rng, '#CCFBF1')
   ss.toast('Paciente en la fila ' + fila, 'PADDS', 2)
 }
 
@@ -195,7 +194,6 @@ function _aplicarFiltrosPac(sh) {
   var est = String(sh.getRange('G2').getValue() || '').trim().toUpperCase()
   var usando = term !== '' || (est !== '' && est !== 'TODOS')
   var lr = sh.getLastRow()
-  console.log('_aplicarFiltrosPac: term="' + term + '" est="' + est + '" usando=' + usando)
   if (lr < 4) return
 
   var f = sh.getFilter()
@@ -212,7 +210,6 @@ function _aplicarFiltrosPac(sh) {
   var data = sh.getRange(4, 1, lr - 3, 12).getValues()
   var ocultas = 0
   var ranges = []
-  var filasOk = []
   for (var r = 0; r < data.length; r++) {
     var estadoRow = _norm(data[r][5]).toUpperCase()
     var rowMatch = est === '' || est === 'TODOS' || estadoRow === est
@@ -234,8 +231,6 @@ function _aplicarFiltrosPac(sh) {
         ranges.push([4 + r, 1])
       }
       ocultas++
-    } else {
-      filasOk.push(4 + r)
     }
   }
   for (var i = 0; i < ranges.length; i++) {
@@ -244,26 +239,6 @@ function _aplicarFiltrosPac(sh) {
 
   var visibles = data.length - ocultas
   sh.getRange('D2').setValue(visibles + ' de ' + data.length + ' pacientes')
-  if (visibles > 0) _flashFilas(sh, filasOk, '#CCFBF1', 250)
-}
-
-// Diagnóstico: prueba visual de las animaciones (parpadeo de filas y de sección).
-// Si desde el menú se ve y desde B2/F2 no, el problema es el trigger → recarga la
-// hoja (F5) y abre la pestaña desde la que usas Pacientes.
-function probarAnimaciones() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) {
-    ss.toast('No se encontró la hoja ' + HOJA_PAC, 'Prueba', 3)
-    return
-  }
-  var lr = sh.getLastRow()
-  if (lr < 7) { ss.toast('Se necesitan al menos 3 filas de pacientes para probar', 'Prueba', 3); return }
-  var filas = [4, 5, 6]
-  try { sh.setActiveRange(sh.getRange(4, 1)) } catch (eS) {}
-  _flashFilas(sh, filas, '#CCFBF1', 250)
-  try { _pulsarSeccionPac(PAC_SECCIONES[0].ini) } catch (eP) {}
-  ss.toast('Animación ejecutada sobre las filas 4-6 y la 1ª sección (β). Si se vio, el trigger está apagado: recarga la hoja.', 'Prueba', 3)
 }
 
 // ─── FILTRO DE SECCIONES (dropdown F2, una celda) ────────────────────────────

@@ -531,49 +531,6 @@ function _lightenHex(hex, rAdd, gAdd, bAdd) {
   return _ajustarHex(hex, rAdd || 140, gAdd || 100, bAdd || 110)
 }
 
-// "Animación" de parpadeo: alterna el fondo 3 veces y restaura el original.
-// Sheets no permite animaciones reales; esto simula el efecto al buscar/ubicar.
-function _flashFila(rng, color) {
-  try {
-    var orig = rng.getBackgrounds()
-    for (var i = 0; i < 3; i++) {
-      rng.setBackground(i % 2 === 0 ? color : '#FFFFFF')
-      Utilities.sleep(150)
-    }
-    rng.setBackgrounds(orig)
-  } catch (eF) {}
-}
-
-// Parpadeo para muchas filas a la vez (buscador/filtros): 2 pulsos color→blanco
-// y restaura los fondos originales. Ignora el pedido si hay más de 400 filas.
-function _flashFilas(sh, filas, color, milis) {
-  try {
-    if (!filas || filas.length === 0 || filas.length > 400) return
-    console.log('_flashFilas: ' + filas.length + ' filas')
-    var lc = sh.getLastColumn()
-    var chunks = []
-    var start = filas[0], prev = filas[0], n = 1
-    for (var i = 1; i < filas.length; i++) {
-      if (filas[i] === prev + 1) { n++; prev = filas[i] }
-      else { chunks.push([start, n]); start = filas[i]; prev = filas[i]; n = 1 }
-    }
-    chunks.push([start, n])
-    var rngs = []
-    for (var c = 0; c < chunks.length; c++) {
-      var rg = sh.getRange(chunks[c][0], 1, chunks[c][1], lc)
-      rngs.push([rg, rg.getBackgrounds()])
-    }
-    var ms = milis || 250
-    for (var p = 0; p < 2; p++) {
-      for (var c2 = 0; c2 < rngs.length; c2++) rngs[c2][0].setBackground(color)
-      Utilities.sleep(ms)
-      for (var c3 = 0; c3 < rngs.length; c3++) rngs[c3][0].setBackground('#FFFFFF')
-      Utilities.sleep(ms)
-    }
-    for (var c4 = 0; c4 < rngs.length; c4++) rngs[c4][0].setBackgrounds(rngs[c4][1])
-  } catch (eF) { console.error('_flashFilas: ' + eF.message) }
-}
-
 function _fmtCeldaParaComparar(val) {
   if (typeof val === 'object' && val instanceof Date && !isNaN(val.getTime())) {
     return Utilities.formatDate(val, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), 'dd/MM/yyyy')

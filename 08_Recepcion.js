@@ -584,14 +584,12 @@ function aprobarFormularios() {
     if (rechRows.length) msg.push(rechRows.length + ' rechazados eliminados')
     ss.toast(msg.length ? msg.join(', ') : 'No hay Gestionados ni Rechazados para procesar. Pendientes se saltan.', 'PADDS', 4)
 
-    // Ir al paciente transferido y hacerlo "parpadear" para que se vea dónde quedó.
+    // Ir al paciente transferido para que se vea dónde quedó.
     try {
       if (transferidos.filaDestino >= 4) {
         var pacN = ss.getSheetByName(HOJA_PAC)
         if (pacN && transferidos.filaDestino <= pacN.getLastRow()) {
-          var pr = pacN.getRange(transferidos.filaDestino, 1, 1, pacN.getLastColumn())
-          pacN.setActiveRange(pr)
-          _flashFila(pr, '#CCFBF1')
+          pacN.setActiveRange(pacN.getRange(transferidos.filaDestino, 1, 1, pacN.getLastColumn()))
         }
       }
     } catch (eNav) {}
