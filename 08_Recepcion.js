@@ -329,7 +329,7 @@ rules.push(SpreadsheetApp.newConditionalFormatRule()
   // y dejaba la hoja "toda naranja". Las filas de datos llevan cebra uniforme.
 
   rules.push(SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=AND($G5<>"",COUNTIF($G$5:$G,$G5)>1)')
+    .whenFormulaSatisfied('=AND($G5<>"",COUNTIF($G$5:$G$' + maxRows + ',$G5)>1)')
     .setBackground('#FEF3C7').setFontColor('#B45309').setBold(true)
     .setRanges([sh.getRange(5, 7, maxRows - 4, 1)]).build())
   sh.setConditionalFormatRules(rules)
@@ -370,7 +370,7 @@ rules.push(SpreadsheetApp.newConditionalFormatRule()
 
   sh.getRange(5, 19, maxRows - 4, 1).setDataValidation(
     SpreadsheetApp.newDataValidation()
-      .requireValueInList(['BENEFICIARIO', 'INGRESADO', 'PENDIENTE', 'NO APLICA', 'EN ESPERA', 'N/A'], true)
+      .requireValueInList(['BENEFICIARIO', 'INGRESADO', 'NO INGRESA', 'NO APLICA', 'PENDIENTE', 'EN ESPERA', 'RECHAZA', 'N/A'], true)
       .setAllowInvalid(true).setHelpText('Postulación a estipendio. Se copia a Pacientes.').build())
 
   sh.getRange(5, 16, maxRows - 4, 1).setDataValidation(
@@ -390,7 +390,7 @@ rules.push(SpreadsheetApp.newConditionalFormatRule()
       .setAllowInvalid(true).setHelpText('Elija la prestación realizada (se copia a la columna correspondiente de Pacientes)').build())
 
   sh.getRange(5, 12, maxRows - 4, 1).setDataValidation(
-    SpreadsheetApp.newDataValidation().requireValueInList(['NORMAL', 'SOBRE PESO', 'SOBREPESO', 'OBESIDAD', 'BAJO PESO', 'N/A'], true)
+    SpreadsheetApp.newDataValidation().requireValueInList(['NORMAL', 'SOBRE PESO', 'SOBREPESO', 'OBESIDAD', 'OBESIDAD MORBIDA', 'BAJO PESO', 'N/A'], true)
       .setAllowInvalid(true).build())
 
   sh.getRange(5, 10, maxRows - 4, 1).setDataValidation(
@@ -406,7 +406,7 @@ rules.push(SpreadsheetApp.newConditionalFormatRule()
 
   sh.getRange(5, 15, maxRows - 4, 1).setDataValidation(
     SpreadsheetApp.newDataValidation()
-      .requireValueInList(['SOBRECARGA INTENSA', 'SOBRECARGA LEVE', 'SIN SOBRECARGA', 'AUSENCIA', 'N/A', 'PENDIENTE'], true)
+      .requireValueInList(['N/A', 'PENDIENTE', 'RECHAZA', 'SIN SOBRECARGA', 'SOBRECARGA LEVE', 'SOBRECARGA INTENSA', 'CUIDADORA REMUNERADA', 'AUSENCIA'], true)
       .setAllowInvalid(true).setHelpText('Resultado de la escala Zarit (se copia a Pacientes).').build())
 
   sh.setFrozenColumns(0)

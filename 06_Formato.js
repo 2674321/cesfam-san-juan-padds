@@ -94,6 +94,7 @@ function formatearDatos() {
 
 function _formatearDatosSinConfirmar(sh, ss) {
   ss.toast('Formateando datos y diseño…', 'PADDS', 1)
+  _optsRefsCache = null
 
   var eliminadas = 0
   try { eliminadas = _borrarFilasVacias(sh, 4) } catch(eV) {}
@@ -680,49 +681,50 @@ function _pintarFechasInvalidas(sh, lr, lc, soloFila) {
   NO_FUTURA[COL.F_NACIMIENTO] = true
   NO_FUTURA[COL.F_EGRESO] = true
   NO_FUTURA[COL.F_FALLECIMIENTO] = true
+  // Una sola lectura del bloque (fila completa en onEdit, hoja entera al formatear).
+  var block = soloFila
+    ? sh.getRange(r0, 1, 1, lc).getValues()
+    : sh.getRange(r0, 1, nr, lc).getValues()
   for (var i = 0; i < _FECHAS_VA.length; i++) {
     var col = _FECHAS_VA[i]
     if (col > lc) continue
-    var rng = sh.getRange(r0, col, nr, 1)
-    var vals = rng.getValues()
-    var bgs = rng.getBackgrounds()
-    var fgs = rng.getFontColors()
-    var wts = rng.getFontWeights()
-    var nb = [], nf = [], nw = [], notas = [], toca = false
+    var nb = [], nf = [], nw = [], notas = []
+    var toca = false
     for (var r = 0; r < nr; r++) {
-      var v = vals[r][0]
+      var v = soloFila ? block[0][col - 1] : block[r][col - 1]
       var txt = v == null ? '' : String(v).trim()
       var t = txt.toUpperCase()
-      if (txt === '' || t === 'N/A' || t === 'NA') {
-        nb.push(null); nf.push(null); nw.push(null); notas.push('')
-        continue
+      var estado = ''
+      if (!(txt === '' || t === 'N/A' || t === 'NA')) {
+        var f = _parseDate(v)
+        if (!f && !_parseDate(txt.replace(/-/g, '/'))) estado = 'NO_FECHA'
+        else if (NO_FUTURA[col] && _parseDate(v).getTime() > hoyT) estado = 'FUTURA'
       }
-      var f = _parseDate(v)
-      if (!f && !_parseDate(txt.replace(/-/g, '/'))) {
+      if (estado === 'NO_FECHA') {
         toca = true
-        nb.push('#FEE2E2'); nf.push('#B91C1C'); nw.push('bold')
+        nb.push(['#FEE2E2']); nf.push(['#B91C1C']); nw.push(['bold'])
         notas.push('⚠️ Este texto no es una fecha: escribe dd/mm/aaaa o N/A')
-        continue
-      }
-      if (NO_FUTURA[col] && _parseDate(v).getTime() > hoyT) {
+      } else if (estado === 'FUTURA') {
         toca = true
-        nb.push('#FEF3C7'); nf.push('#B45309'); nw.push('normal')
+        nb.push(['#FEF3C7']); nf.push(['#B45309']); nw.push(['normal'])
         notas.push('⚠️ Fecha futura: debe ser una fecha ya realizada (¿año mal escrito?)')
-        continue
+      } else {
+        nb.push([null]); nf.push([null]); nw.push([null]); notas.push('')
       }
-      nb.push(null); nf.push(null); nw.push(null); notas.push('')
     }
     if (!toca) continue
-    for (var r2 = 0; r2 < nr; r2++) {
-      if (nb[r2] !== null) { bgs[r2][0] = nb[r2]; fgs[r2][0] = nf[r2]; wts[r2][0] = nw[r2] }
-    }
-    rng.setBackgrounds(bgs).setFontColors(fgs).setFontWeights(wts)
+    var rng = sh.getRange(r0, col, nr, 1)
+    rng.setBackgrounds(nb).setFontColors(nf).setFontWeights(nw)
     rng.setNotes([notas])
   }
 }
 
 // Mantiene la hoja oculta _Opciones: una columna por dropdown, cada opción con
 // fondo/letra coloreados. Devuelve { col: { letra, vals } } por columna.
+
+// Caché de un solo formateo: evita reconstruir _Opciones dos veces por formateo.
+var _optsRefsCache = null
+
 function _sincronizarOpciones(ss) {
   var hoja = ss.getSheetByName('_Opciones')
   if (!hoja) {
@@ -778,8 +780,13 @@ function _aplicarValidaciones(sh, lr, lc) {
   }
   groups.push(cur)
 
-  var refs = null
-  try { refs = _sincronizarOpciones(sh.getParent()) } catch (eOpt) {}
+  var refs = _optsRefsCache
+  if (!refs) {
+    try {
+      refs = _sincronizarOpciones(sh.getParent())
+      _optsRefsCache = refs
+    } catch (eOpt) {}
+  }
 
   if (lr >= 4) {
     var rowCount = lr - 3
@@ -948,7 +955,8 @@ function _refrescarFormatoCondicional(sh, lr, lc) {
 
   if (COL.ESTADO_NUTRICIONAL <= lc) _porCol({
     'NORMAL': ['#DCFCE7', '#15803D'], 'SOBREPESO': ['#FFEDD5', '#C2410C'],
-    'OBESIDAD': ['#FEE2E2', '#B91C1C'], 'BAJO PESO': ['#FEF3C7', '#B45309'],
+    'OBESIDAD': ['#FEE2E2', '#B91C1C'], 'OBESIDAD MORBIDA': ['#FEE2E2', '#B91C1C'],
+    'BAJO PESO': ['#FEF3C7', '#B45309'],
     'N/A': ['#F1F5F9', '#64748B'],
   }, COL.ESTADO_NUTRICIONAL, sh.getRange(4, COL.ESTADO_NUTRICIONAL, lr - 3, 1))
 
@@ -968,8 +976,10 @@ function _refrescarFormatoCondicional(sh, lr, lc) {
 
   // ── MEJORAS VISUALES AUTOMÁTICAS (se recalculan solas, sin menú) ─────────
   // RUN duplicado: mismo RUN en dos pacientes (más de una fila con el mismo valor)
+  // La referencia está acotada a lr (no a la columna completa): con la fórmula
+  // abierta cada celda escaneaba toda la columna en cada recálculo (O(n²)).
   if (COL.RUN <= lc) {
-    rules.push(_rCF('=AND($H4<>"",COUNTIF($H$4:$H,$H4)>1)',
+    rules.push(_rCF('=AND($H4<>"",COUNTIF($H$4:$H$' + lr + ',$H4)>1)',
       sh.getRange(4, COL.RUN, lr - 3, 1), { bg: '#FEE2E2', fg: '#B91C1C', bold: true }))
   }
   // Observaciones con avisos ⚠️ (fechas inválidas, atenciones mal registradas, etc.)
@@ -1767,11 +1777,11 @@ function crearDashboard() {
       .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor(T).setBackground(bg2)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
-    sh.getRange(vr, 7).setFormula('=SUM(B' + vr + ':F' + vr + ')')
+    sh.getRange(vr, 7).setValue(0)
       .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor(GREEN).setBackground(bg2)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
-    sh.getRange(vr, 8).setFormula('=IF(G' + vr + '=0' + SEP + ' ""' + SEP + ' ROUND(B' + vr + '/G' + vr + '*100' + SEP + ' 0))')
+    sh.getRange(vr, 8).setValue('')
       .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor('#15803D').setBackground(bg2)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
@@ -1788,9 +1798,7 @@ function crearDashboard() {
   var alertas = [
     ['VENCIDOS',   '0', '#B91C1C', '#FEE2E2'],
     ['POR VENCER', '0', '#C2410C', '#FFEDD5'],
-    ['PENDIENTES', _CONTROL_FECHAS.filter(function(d) { return d[1] <= lc }).map(function(d) {
-      return 'SUMPRODUCT(--(LEN(TRIM(' + P + colToLetter(d[1]) + '4:' + colToLetter(d[1]) + '))=0))'
-    }).join('+'), '#B45309', '#FEF3C7'],
+    ['PENDIENTES', '0', '#B45309', '#FEF3C7'],
   ]
   alertas.forEach(function(x, i) {
     var ac = 1 + i * 3
@@ -1972,7 +1980,7 @@ function actualizarDashboard() {
   var diasAv = params['DIAS_AVISO'] || 15
   var mesesDe = function(key) { var m = Number(params[key]); return m > 0 ? m : 6 }
 
-  var totV = 0, totPv = 0
+  var totV = 0, totPv = 0, totPd = 0
   var filaVig = vigH + 2
   for (var v = 0; v < _CONTROL_FECHAS.length; v++) {
     var def = _CONTROL_FECHAS[v]
@@ -1990,8 +1998,11 @@ function actualizarDashboard() {
     }
     var vr = filaVig + v
     sh.getRange(vr, 2, 1, 5).setValues([[cAl, cPv, cV, cPd, cNa]])
+    var totU = cAl + cPv + cV + cPd + cNa
+    sh.getRange(vr, 7, 1, 2).setValues([[totU, totU ? Math.round(cAl / totU * 100) : '']])
     totV += cV
     totPv += cPv
+    totPd += cPd
   }
 
   var secAl = -1
@@ -2001,6 +2012,7 @@ function actualizarDashboard() {
   if (secAl >= 0) {
     sh.getRange(secAl + 4, 1).setValue(totV)
     sh.getRange(secAl + 4, 4).setValue(totPv)
+    sh.getRange(secAl + 4, 7).setValue(totPd)
 
     var conV = 0, conPv = 0, sinCtrl = 0
     for (var r = 0; r < data.length; r++) {
@@ -2066,7 +2078,9 @@ function configurarResaltadoFila() {
         if (!hasResalte) keep.push(existing[ri])
       }
 
-      var mr = sh.getMaxRows()
+      // Rango acotado a datos (+50 filas de margen): evita aplicar la regla
+      // INDIRECT (volátil) sobre filas vacías de la hoja completa.
+      var mr = Math.min(sh.getLastRow() + 50, sh.getMaxRows())
       var mc = sh.getLastColumn() || sh.getMaxColumns()
       var range = sh.getRange(1, 1, mr, mc)
       var formula = '=AND(ROW()>=4, ROW()=INDIRECT("_Resalte!B1"), INDIRECT("_Resalte!A1")="' + sheets[si] + '")'

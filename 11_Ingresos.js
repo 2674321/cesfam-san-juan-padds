@@ -678,18 +678,22 @@ function _ingresarDesdeLista(row, ctx) {
   var newRow = []
   for (var c = 1; c <= nCols; c++) newRow.push('')
 
-  var nombre = String(sh.getRange(row, cols.nombre).getValue() || '').trim().toUpperCase()
-  var apP = cols.apPaterno ? String(sh.getRange(row, cols.apPaterno).getValue() || '').trim().toUpperCase() : ''
-  var apM = cols.apMaterno ? String(sh.getRange(row, cols.apMaterno).getValue() || '').trim().toUpperCase() : ''
+  // Una sola lectura de la fila origen (en vez de una llamada por celda).
+  var _srcVals = sh.getRange(row, 1, 1, sh.getLastColumn()).getValues()[0]
+  var _cV = function(cn) { return cn ? String(_srcVals[cn - 1] || '').trim().toUpperCase() : '' }
+  var _cT = function(cn) { return cn ? String(_srcVals[cn - 1] || '').trim() : '' }
+  var nombre = _cV(cols.nombre)
+  var apP = _cV(cols.apPaterno)
+  var apM = _cV(cols.apMaterno)
   // Separar el nombre en NOMBRE/APELLIDO/APELLIDO 2 para no editarlo a mano.
   var _div = _dividirNombreApellidos(nombre, apP, apM)
   nombre = _div.nombre
   apP = _div.apellido
   apM = _div.apellido2
-  var dir = cols.direccion ? String(sh.getRange(row, cols.direccion).getValue() || '').trim() : ''
-  var tel = cols.telefono ? String(sh.getRange(row, cols.telefono).getValue() || '').trim() : ''
-  var deriv = cols.derivado ? String(sh.getRange(row, cols.derivado).getValue() || '').trim() : ''
-  var antec = cols.antecedentes ? String(sh.getRange(row, cols.antecedentes).getValue() || '').trim() : ''
+  var dir = _cT(cols.direccion)
+  var tel = _cT(cols.telefono)
+  var deriv = _cT(cols.derivado)
+  var antec = _cT(cols.antecedentes)
 
   newRow[COL.ID - 1] = id
   newRow[COL.VITAL - 1] = 'VIGENTE'
@@ -711,6 +715,7 @@ function _ingresarDesdeLista(row, ctx) {
   pac.getRange(fila, 1, 1, nCols).setValues([newRow])
   pac.getRange(fila, 1, 1, nCols)
     .setFontColor('#000000').setFontWeight('normal').setFontSize(9).setVerticalAlignment('middle')
+  if (ctx) ctx.lastRun = runN
 
   try { _actualizarEstadosFila(fila) } catch (e) {}
 
@@ -831,6 +836,10 @@ function _onEditIngresosImpl(e) {
     ui.alert('No se pudo enviar', 'No se eliminó la fila.', ui.ButtonSet.OK)
     return
   }
+  try {
+    _optsRefsCache = null
+    _refrescarFormatoCondicional(pac, pac.getLastRow(), pac.getLastColumn())
+  } catch (eCF4) {}
 
   // Eliminar SOLO la fila (nunca una hoja) y marcar para que el onEdit
 
@@ -957,7 +966,9 @@ function enviarIngresasAPacientes() {
     var res = _ingresarDesdeLista(candidatas[j], ctx)
     if (res === 'enviado') {
       enviadas++; filasEnviadas.push(candidatas[j])
-      var rRaw = String(sh.getRange(candidatas[j], d.cols.run).getValue() || '').trim()
+      var rRaw = ctx && ctx.lastRun
+        ? ctx.lastRun
+        : String(sh.getRange(candidatas[j], d.cols.run).getValue() || '').trim()
       if (rRaw && /[0-9]/.test(rRaw)) rutsEnviados.push(formatearRUT(rRaw).toUpperCase())
     }
     else if (res === 'duplicado') dup++
@@ -967,6 +978,10 @@ function enviarIngresasAPacientes() {
   if (enviadas > 0) {
     try {
       var _nB = _compactarPacientes(pac) + _limpiarFilasVaciasLoop(pac, 4)
+      // Re-aplica reglas de formato condicional (RUN duplicado) y validaciones
+      // a las filas nuevas, con referencias frescas a _Opciones.
+      _optsRefsCache = null
+      _refrescarFormatoCondicional(pac, pac.getLastRow(), pac.getLastColumn())
       _log(ss, 'Pacientes', 'enviarIngresasAPacientes', 'ok',
         'enviadas=' + enviadas + ' duplicadas=' + dup + ' limpias=' + _nB)
     } catch (eB2) {}
