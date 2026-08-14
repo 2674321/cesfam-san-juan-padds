@@ -127,7 +127,7 @@ function buscarPacienteGlobal() {
 'dt.innerHTML="<span class=\\"rut\\">"+_e(o.ru)+"</span> &nbsp; <span>"+_e(o.s)+"</span>";el.appendChild(dt);' +
 'var tg=document.createElement("span");tg.className="chip "+_tag(o.e);tg.textContent=_e(o.e);dt.appendChild(tg);' +
 'var ops=document.createElement("div");ops.className="ops";' +
-'var b1=document.createElement("button");b1.className="btn btn-sm btn-teal";b1.textContent="📄 Ficha";b1.onclick=function(){google.script.run._abrirFichaV4(o.f)};ops.appendChild(b1);' +
+'var b1=document.createElement("button");b1.className="btn btn-sm btn-teal";b1.textContent="📄 Ficha";b1.onclick=function(){google.script.run.withFailureHandler(function(er){cta.textContent="No se pudo abrir la ficha: "+(er&&er.message||"error")})._abrirFichaV4(o.f)};ops.appendChild(b1);' +
 'var b2=document.createElement("button");b2.className="btn btn-sm btn-sec";b2.textContent="📍 Ir a la fila";b2.onclick=function(){google.script.run._navegarAFila(o.f)};ops.appendChild(b2);' +
 'el.appendChild(ops);res.appendChild(el)}' +
 'inp.addEventListener("input",function(){clearTimeout(_t);_t=setTimeout(function(){' +
@@ -170,7 +170,7 @@ function _abrirFichaV4(fila) {
   var lc = Math.min(sh.getLastColumn(), 112)
   var vals = sh.getRange(fila, 1, 1, lc).getValues()[0]
   var html = _filaV4Html(vals, fila, lc)
-  ss.getUi().showSidebar(
+  SpreadsheetApp.getUi().showSidebar(
     HtmlService.createHtmlOutput(html).setTitle('Ficha del paciente · PADDS').setWidth(_V4_FICHA_ANCHO)
   )
 }
