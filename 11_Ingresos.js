@@ -16,6 +16,17 @@
 function _ingDetectarColumnas(sh) {
   var lc = sh.getLastColumn()
   if (lc < 2) return null
+  // Caché: la estructura no cambia entre ediciones (se invalida si cambia el
+  // nº de columnas o tras 60 s). Evita releer 10 filas en cada tecla/edición.
+  var cache = CacheService.getScriptCache()
+  var ck = '_ingD_' + sh.getName()
+  try {
+    var hit = cache.get(ck)
+    if (hit) {
+      var hd = JSON.parse(hit)
+      if (hd.lc === lc && Date.now() - hd.at < 60000) return hd.d
+    }
+  } catch (eJ) {}
   var maxRow = Math.min(10, sh.getMaxRows())
   var data = sh.getRange(1, 1, maxRow, lc).getValues()
   var best = null
@@ -49,6 +60,9 @@ function _ingDetectarColumnas(sh) {
       bestScore = score
       best = { headerRow: r + 1, cols: cols }
     }
+  }
+  if (best) {
+    try { cache.put(ck, JSON.stringify({ d: best, lc: lc, at: Date.now() }), 60) } catch (eC2) {}
   }
   return best
 }
@@ -384,23 +398,50 @@ function _ingFormatearFila(sh, row, numRows, d) {
   var cols = d.cols
   var maxFilas = Math.min(numRows, 100)
 
+  // No re-formatear si el valor de OBSERVACION no cambió (evita el trabajo
+  // duplicado de los dos triggers simples/instalables en cada edición).
+  var accVal = ''
+  var cache = CacheService.getScriptCache()
+  var key = '_ingFmt_' + row + '_' + maxFilas
+  if (cols.accion) {
+    accVal = String(sh.getRange(row, cols.accion).getValue() || '').trim()
+    try { if (cache.get(key) === accVal) return } catch (eCk) {}
+  }
+
+  var colSet = {}, fmtSet = {}
+  if (cols.run) { colSet[cols.run] = 'center'; fmtSet[cols.run] = '@' }
+  if (cols.estado) colSet[cols.estado] = 'center'
+  if (cols.fechaSolicitud) { colSet[cols.fechaSolicitud] = 'center'; fmtSet[cols.fechaSolicitud] = 'dd/MM/yyyy' }
+  if (cols.accion) colSet[cols.accion] = 'center'
+
+  var actVals = cols.accion ? sh.getRange(row, cols.accion, maxFilas, 1).getValues() : null
+  var bgs = [], als = [], fmts = []
   for (var i = 0; i < maxFilas; i++) {
     var r = row + i
     var bg = (r - hr) % 2 === 1 ? _UI.zebraBg[0] : _UI.zebraBg[1]
-    var rng = sh.getRange(r, 1, 1, lcF)
-    rng.setBackground(bg)
-      .setFontFamily(_UI.font).setFontSize(10)
-      .setVerticalAlignment('middle').setFontColor('#202124')
-    if (cols.run) { sh.getRange(r, cols.run).setHorizontalAlignment('center'); sh.getRange(r, cols.run).setNumberFormat('@') }
-    if (cols.estado) sh.getRange(r, cols.estado).setHorizontalAlignment('center')
-    if (cols.fechaSolicitud) { sh.getRange(r, cols.fechaSolicitud).setHorizontalAlignment('center'); sh.getRange(r, cols.fechaSolicitud).setNumberFormat('dd/MM/yyyy') }
-    if (cols.accion) {
-      sh.getRange(r, cols.accion).setHorizontalAlignment('center')
-      var bgAcc = _ingColorAccion(sh.getRange(r, cols.accion).getValue())
-      if (bgAcc) sh.getRange(r, cols.accion).setBackground(bgAcc)
+    var bgRow = [], alRow = [], fmRow = []
+    for (var c = 0; c < lcF; c++) {
+      bgRow.push(bg)
+      var cc = c + 1
+      alRow.push(colSet[cc] || 'left')
+      fmRow.push(fmtSet[cc] || 'General')
     }
-    sh.getRange(r, 1, 1, lcF)
-      .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
+    if (actVals) {
+      var bgA = _ingColorAccion(actVals[i][0])
+      if (bgA) bgRow[cols.accion - 1] = bgA
+    }
+    bgs.push(bgRow); als.push(alRow); fmts.push(fmRow)
+  }
+  sh.getRange(row, 1, maxFilas, lcF)
+    .setBackgrounds(bgs)
+    .setHorizontalAlignments(als)
+    .setNumberFormats(fmts)
+    .setFontFamily(_UI.font).setFontSize(10)
+    .setVerticalAlignment('middle').setFontColor('#202124')
+    .setBorder(true, true, true, true, true, true, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
+
+  if (cols.accion) {
+    try { cache.put(key, accVal, 45) } catch (eCw) {}
   }
 }
 
@@ -565,13 +606,13 @@ function _corregirIngresosImpl(ss) {
 // ─── OBSERVACION = INGRESA → ENVIAR A PACIENTES ──────────────────────────────
 // Llamada por onEdit (04_Eventos.gs). Independiente del flujo del formulario.
 
-function _ingresarDesdeLista(row) {
+function _ingresarDesdeLista(row, ctx) {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName('Ingresos')
   var pac = ss.getSheetByName(HOJA_PAC)
   if (!sh || !pac) return 'no_estructura'
 
-  var d = _ingDetectarColumnas(sh)
+  var d = (ctx && ctx.d) || _ingDetectarColumnas(sh)
   if (!d || !d.cols.run || !d.cols.nombre) return 'no_estructura'
   var cols = d.cols
   var celAccion = sh.getRange(row, cols.accion || cols.estado || 1)
@@ -589,24 +630,19 @@ function _ingresarDesdeLista(row) {
     return 'run_invalido'
   }
 
-  var filaExistente = _buscarFilaPaciente(pac, runN)
+  // En modo batch (ctx) se usa el mapa de Pacientes leído una sola vez; en modo
+  // único se busca directo (misma lógica que antes).
+  var filaExistente = -1
+  if (ctx && ctx.runMap) {
+    if (ctx.runMap[runN] !== undefined) filaExistente = ctx.runMap[runN]
+    else if (ctx.runMap[runN.replace('-', '')] !== undefined) filaExistente = ctx.runMap[runN.replace('-', '')]
+  } else {
+    filaExistente = _buscarFilaPaciente(pac, runN)
+  }
   if (filaExistente > 0) {
     celAccion.setNote('Ya existe en Pacientes (fila ' + filaExistente + ') — no se duplicó')
     ss.toast('El RUT ya está en Pacientes (fila ' + filaExistente + '): no se duplicó', 'INGRESOS', 6)
     return 'duplicado'
-  }
-
-  // 2) Crear paciente nuevo (agregar fila al final de Pacientes, nunca borrar)
-  try { _borrarFilasVacias(pac, 4) } catch (eC) {}
-  var lr = pac.getLastRow()
-  var fila = lr + 1
-  var id = 1
-  if (lr > 3) {
-    var ids = pac.getRange(4, 1, lr - 3, 1).getValues()
-    for (var i = 0; i < ids.length; i++) {
-      var v = Number(ids[i][0])
-      if (!isNaN(v) && v >= id) id = v + 1
-    }
   }
 
   var nCols = _COLUMNAS._count || 112
@@ -616,12 +652,31 @@ function _ingresarDesdeLista(row) {
     return 'no_estructura'
   }
 
+  var fila, id
+  if (ctx) {
+    fila = ctx.lr + 1
+    id = ctx.nextId
+    ctx.lr = fila
+    ctx.nextId = id + 1
+  } else {
+    try { _borrarFilasVacias(pac, 4) } catch (eC) {}
+    var lr = pac.getLastRow()
+    fila = lr + 1
+    id = 1
+    if (lr > 3) {
+      var ids = pac.getRange(4, 1, lr - 3, 1).getValues()
+      for (var i = 0; i < ids.length; i++) {
+        var v = Number(ids[i][0])
+        if (!isNaN(v) && v >= id) id = v + 1
+      }
+    }
+  }
+
   if (fila > pac.getMaxRows()) {
     pac.insertRowsAfter(pac.getMaxRows(), fila - pac.getMaxRows())
   }
   var newRow = []
   for (var c = 1; c <= nCols; c++) newRow.push('')
-  pac.getRange(fila, 1, 1, nCols).setValues([newRow])
 
   var nombre = String(sh.getRange(row, cols.nombre).getValue() || '').trim().toUpperCase()
   var apP = cols.apPaterno ? String(sh.getRange(row, cols.apPaterno).getValue() || '').trim().toUpperCase() : ''
@@ -636,27 +691,24 @@ function _ingresarDesdeLista(row) {
   var deriv = cols.derivado ? String(sh.getRange(row, cols.derivado).getValue() || '').trim() : ''
   var antec = cols.antecedentes ? String(sh.getRange(row, cols.antecedentes).getValue() || '').trim() : ''
 
-  pac.getRange(fila, COL.ID).setValue(id)
-  pac.getRange(fila, COL.VITAL).setValue('VIGENTE')
-  pac.getRange(fila, COL.SECTOR).setValue('PENDIENTE')
-  pac.getRange(fila, COL.RUN).setValue(runN)
-  if (nombre) pac.getRange(fila, COL.NOMBRE).setValue(nombre)
-  if (apP) pac.getRange(fila, COL.APELLIDO).setValue(apP)
-  pac.getRange(fila, COL.APELLIDO2).setValue(apM)
-  if (dir) pac.getRange(fila, COL.DIRECCION).setValue(dir.toUpperCase())
-  if (tel) pac.getRange(fila, COL.TELEFONO).setValue(tel)
-
-  pac.getRange(fila, COL.F_INGRESO_PADI).setValue(new Date())
-
-  if (antec) pac.getRange(fila, COL.MORBILIDAD).setValue(antec.toUpperCase())
-
+  newRow[COL.ID - 1] = id
+  newRow[COL.VITAL - 1] = 'VIGENTE'
+  newRow[COL.SECTOR - 1] = 'PENDIENTE'
+  newRow[COL.RUN - 1] = runN
+  if (nombre) newRow[COL.NOMBRE - 1] = nombre
+  if (apP) newRow[COL.APELLIDO - 1] = apP
+  newRow[COL.APELLIDO2 - 1] = apM
+  if (dir) newRow[COL.DIRECCION - 1] = dir.toUpperCase()
+  if (tel) newRow[COL.TELEFONO - 1] = tel
+  newRow[COL.F_INGRESO_PADI - 1] = new Date()
+  if (antec) newRow[COL.MORBILIDAD - 1] = antec.toUpperCase()
   var notaObs = '[INGRESO desde hoja INGRESOS] ' +
     Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy')
   if (deriv) notaObs += '\n  Derivado por: ' + deriv
-  pac.getRange(fila, COL.OBSERVACIONES).setValue(notaObs)
+  newRow[COL.OBSERVACIONES - 1] = notaObs
+  try { newRow[COL.EDITOR - 1] = Session.getActiveUser().getEmail() } catch (e) {}
 
-  try { pac.getRange(fila, COL.EDITOR).setValue(Session.getActiveUser().getEmail()) } catch (e) {}
-
+  pac.getRange(fila, 1, 1, nCols).setValues([newRow])
   pac.getRange(fila, 1, 1, nCols)
     .setFontColor('#000000').setFontWeight('normal').setFontSize(9).setVerticalAlignment('middle')
 
@@ -666,15 +718,17 @@ function _ingresarDesdeLista(row) {
     'Enviado a Pacientes · fila ' + fila + ' · ' +
     Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm'))
 
-  SpreadsheetApp.flush()
+  if (!ctx) SpreadsheetApp.flush()
 
-  try {
-    var _nPre = _compactarPacientes(pac) + _limpiarFilasVaciasLoop(pac, 4)
-    _log(ss, 'Pacientes', '_ingresarDesdeLista', 'ok',
-      'fila=' + fila + ' lr=' + lr + ' maxRows=' + pac.getMaxRows() + ' vaciasEliminadas=' + _nPre)
-  } catch (eV) {}
+  if (!ctx) {
+    try {
+      var _nPre = _compactarPacientes(pac) + _limpiarFilasVaciasLoop(pac, 4)
+      _log(ss, 'Pacientes', '_ingresarDesdeLista', 'ok',
+        'fila=' + fila + ' lr=' + lr + ' maxRows=' + pac.getMaxRows() + ' vaciasEliminadas=' + _nPre)
+    } catch (eV) {}
 
-  ss.toast('Ingreso confirmado → Pacientes fila ' + fila + ' (ID ' + id + ')', 'INGRESOS', 6)
+    ss.toast('Ingreso confirmado → Pacientes fila ' + fila + ' (ID ' + id + ')', 'INGRESOS', 6)
+  }
   return 'enviado'
 }
 
@@ -815,10 +869,9 @@ function _onEditIngresosImpl(e) {
     }
   } catch (ePend) {}
 
-  ui.alert('Enviado',
-    'El paciente se agregó a Pacientes y su fila fue eliminada de INGRESOS.' +
-    (elimPend > 0 ? '\n' + elimPend + ' fila(s) repetida(s) del mismo paciente también fueron eliminadas.' : ''),
-    ui.ButtonSet.OK)
+  var ss = e.source
+  ss.toast('Enviado a Pacientes: ' + (etiqueta || 'paciente') +
+    (elimPend > 0 ? ' + ' + elimPend + ' repetida(s) eliminada(s)' : ''), 'INGRESOS', 4)
 }
 
 function _ingReBandear(sh, d, desdeFila) {
@@ -880,11 +933,28 @@ function enviarIngresasAPacientes() {
     ui.ButtonSet.YES_NO)
   if (resp !== ui.Button.YES) return
 
+  // Modo batch: se lee Pacientes UNA sola vez (mapa RUN→fila + próximo ID) en vez
+  // de re-escanear la hoja por cada candidato.
+  var ctx = { d: d, runMap: {}, nextId: 1, lr: pac.getLastRow() }
+  var pacLr = ctx.lr
+  if (pacLr >= 4) {
+    var pacData = pac.getRange(4, 1, pacLr - 3, 8).getValues()
+    for (var pj = 0; pj < pacData.length; pj++) {
+      var rutP = _normRUN(pacData[pj][7])
+      if (rutP) {
+        ctx.runMap[rutP] = pj + 4
+        if (rutP.indexOf('-') >= 0) ctx.runMap[rutP.replace('-', '')] = pj + 4
+      }
+      var idV = Number(pacData[pj][0])
+      if (!isNaN(idV) && idV >= ctx.nextId) ctx.nextId = idV + 1
+    }
+  }
+
   var enviadas = 0, dup = 0, sinRut = 0
   var filasEnviadas = []
   var rutsEnviados = []
   for (var j = 0; j < candidatas.length; j++) {
-    var res = _ingresarDesdeLista(candidatas[j])
+    var res = _ingresarDesdeLista(candidatas[j], ctx)
     if (res === 'enviado') {
       enviadas++; filasEnviadas.push(candidatas[j])
       var rRaw = String(sh.getRange(candidatas[j], d.cols.run).getValue() || '').trim()
@@ -892,6 +962,14 @@ function enviarIngresasAPacientes() {
     }
     else if (res === 'duplicado') dup++
     else if (res === 'sin_rut') sinRut++
+  }
+
+  if (enviadas > 0) {
+    try {
+      var _nB = _compactarPacientes(pac) + _limpiarFilasVaciasLoop(pac, 4)
+      _log(ss, 'Pacientes', 'enviarIngresasAPacientes', 'ok',
+        'enviadas=' + enviadas + ' duplicadas=' + dup + ' limpias=' + _nB)
+    } catch (eB2) {}
   }
 
   var msg = 'Enviadas: ' + enviadas + ' · ya existían: ' + dup
@@ -946,5 +1024,5 @@ function enviarIngresasAPacientes() {
   } catch (ePend2) {}
   if (elimPend > 0) msg += ' · pendientes eliminadas: ' + elimPend
 
-  ui.alert('Resultado', msg, ui.ButtonSet.OK)
+  ss.toast(msg, 'INGRESOS', 8)
 }
