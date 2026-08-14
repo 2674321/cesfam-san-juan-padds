@@ -250,7 +250,7 @@ function _aplicarFiltrosPac(sh) {
 // Diagnóstico: prueba visual de las animaciones (parpadeo de filas y de sección).
 // Si desde el menú se ve y desde B2/F2 no, el problema es el trigger → recarga la
 // hoja (F5) y abre la pestaña desde la que usas Pacientes.
-function _probarAnimaciones() {
+function probarAnimaciones() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName(HOJA_PAC)
   if (!sh) {
