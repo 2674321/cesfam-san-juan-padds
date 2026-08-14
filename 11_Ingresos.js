@@ -906,7 +906,7 @@ function enviarIngresasAPacientes() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sh = ss.getSheetByName('Ingresos')
   var pac = ss.getSheetByName(HOJA_PAC)
-  if (!sh || !pac) { ss.toast('Faltan las hojas INGRESOS o Pacientes', 'PADDS', 5); return }
+  if (!sh || !pac) { ss.toast('Faltan las hojas INGRESOS o Pacientes', 'INGRESOS', 5); return }
 
   var d = _ingDetectarColumnas(sh)
   var colAcc = d && (d.cols.accion || d.cols.estado)

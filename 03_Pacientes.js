@@ -664,9 +664,6 @@ function diagnosticarFilasExtra() {
     lineas.join('\n') + '\n\nFilas sin ID al final: ' + sinId +
     '\n\n🧹 Córrelo: Pacientes → Datos → Limpiar filas vacías'
   ss.toast(resumen, 'Diagnóstico', 10)
-  try {
-    SpreadsheetApp.getUi().alert('Diagnóstico filas extra', resumen, SpreadsheetApp.getUi().ButtonSet.OK)
-  } catch (eA) {}
 }
 
 // ─── LIMPIAR FILAS VACÍAS AL FINAL (Pacientes) ─────────────────────────────
@@ -960,11 +957,6 @@ function ordenarPacientes() {
   if (lr < 4) { ss.toast('Sin datos para ordenar', 'Pacientes', 3); return }
   var lc = sh.getLastColumn()
 
-  var ui = SpreadsheetApp.getUi()
-  var resp = ui.alert('Ordenar Pacientes',
-    'Ordenar todas las filas alfabéticamente por APELLIDO (col D)?\nEl índice (col A) se mueve con cada paciente.',
-    ui.ButtonSet.YES_NO)
-  if (resp !== ui.Button.YES) return
   var col = COL.APELLIDO
 
   var filter = sh.getFilter()
@@ -1404,6 +1396,7 @@ function ponerTooltipsPacientes() {
     if (col.auto) parts.push(col.auto)
     sh.getRange(3, c).setNote(parts.join('\n'))
   }
+  ss.toast('Tooltips configurados en ' + lc + ' columnas', 'Pacientes', 3)
 }
 
 // ─── LIMPIAR ESPACIOS ──────────────────────────────────────────────────────
@@ -1444,14 +1437,9 @@ function limpiarEspaciosPacientes(confirmado) {
 function reindexarPacientes() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   ss.toast('Renumerando IDs…', 'PADDS', 1)
-  var ui = SpreadsheetApp.getUi()
-  var r = ui.alert('Renumerar ID',
-    '¿Renumerar la columna N° (ID) en orden 1, 2, 3...?\nÚtil después de ordenar o eliminar filas.',
-    ui.ButtonSet.YES_NO)
-  if (r !== ui.Button.YES) return
 
   var sh = ss.getSheetByName(HOJA_PAC)
-  if (!sh) { ui.alert('Hoja ' + HOJA_PAC + ' no encontrada.'); return }
+  if (!sh) { ss.toast('No se encontró la hoja ' + HOJA_PAC + '.', 'Pacientes', 4); return }
   var lr = sh.getLastRow()
   if (lr < 4) return
   var seq = []
@@ -1571,7 +1559,7 @@ function depurarRegistrosDuplicados(skipConfirm) {
   }
 
   if (!set.length) {
-    ui.alert('Depurar registros', '✅ Sin hallazgos: no hay líneas duplicadas ni fechas vacías/absurdas.', ui.ButtonSet.OK)
+    ss.toast('✅ Sin hallazgos: no hay líneas duplicadas ni fechas vacías/absurdas', 'Pacientes', 4)
     return
   }
 
@@ -1707,7 +1695,7 @@ function depurarEntradasDuplicadas(skipConfirm) {
   if (lr >= 4) try { sh.setRowHeights(4, lr - 3, 26) } catch (eRH) {}
 
   if (!totalLin && !totalSep) {
-    ui.alert('Depurar entradas duplicadas', '✅ Sin hallazgos: no hay entradas repetidas ni texto continuo por separar.', ui.ButtonSet.OK)
+    ss.toast('✅ Sin hallazgos: no hay entradas repetidas ni texto continuo por separar', 'Pacientes', 4)
     return
   }
   ui.alert('Depurado completado',

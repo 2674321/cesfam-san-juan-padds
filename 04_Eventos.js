@@ -197,7 +197,7 @@ function onEdit(e) {
           if (inicio < 0) { _deleting = false; _ss.toast('No se encontró la cabecera de la semana', 'Agenda', 3); return }
 
           var ui = SpreadsheetApp.getUi()
-          if (ui.alert('Limpiar semana', '¿Limpiar toda esta semana?', ui.ButtonSet.YES_NO) === ui.Button.YES) {
+          if (ui.alert('Limpiar semana', '¿Limpiar TODO el bloque de esta semana (la columna del profesional)?\nSe borran horarios, nombres y observaciones de esa semana.', ui.ButtonSet.YES_NO) === ui.Button.YES) {
             limpiarBloque(sh, inicio, GI[i])
             _ss.toast('Semana limpiada', 'Agenda', 2)
           }

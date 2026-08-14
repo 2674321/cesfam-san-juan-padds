@@ -513,7 +513,7 @@ function aprobarFormularios() {
 
   var lr = sh.getLastRow()
   var lc = sh.getLastColumn()
-  if (lr < 5) { SpreadsheetApp.getUi().alert('No hay formularios para procesar.'); return }
+  if (lr < 5) { ss.toast('No hay formularios para procesar', 'Formulario', 3); return }
 
   var lock = LockService.getScriptLock()
   try { if (!lock.tryLock(10000)) { ss.toast('No se pudo adquirir el bloqueo, intenta de nuevo', 'Formulario', 3); return } } catch(ee) { return }
@@ -835,7 +835,7 @@ function rechazarFormularios() {
     if (!sh) return
 
     var lr = sh.getLastRow()
-    if (lr < 5) { SpreadsheetApp.getUi().alert('No hay formularios para rechazar.'); return }
+    if (lr < 5) { ss.toast('No hay formularios para rechazar', 'Formulario', 3); return }
 
     var data = sh.getRange(5, 1, lr - 4, sh.getLastColumn()).getValues()
     var email = ''
@@ -896,7 +896,7 @@ function limpiarFormulariosAprobados() {
     }
   }
 
-  if (aLimpiar === 0) { ui.alert('No hay formularios gestionados o rechazados para limpiar.'); return }
+  if (aLimpiar === 0) { ss.toast('No hay formularios gestionados o rechazados para limpiar', 'Formulario', 3); return }
   if (ui.alert('Limpiar', '¿Eliminar ' + aLimpiar + ' formularios gestionados o rechazados?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return
 
   var grupos = [], start = -1
