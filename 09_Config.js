@@ -42,7 +42,6 @@ function onOpen() {
       .addSeparator()
       .addItem('🧹 Limpiar filas vacías', 'limpiarFilasVaciasPacientes')
       .addItem('🔍 Diagnosticar filas extra', 'diagnosticarFilasExtra')
-      .addItem('🧪 Probar animaciones', 'probarAnimaciones')
       .addSeparator()
       .addItem('➖ Eliminar paciente', 'eliminarPaciente'))
     .addSubMenu(ui.createMenu('🔄 Vigencias')
