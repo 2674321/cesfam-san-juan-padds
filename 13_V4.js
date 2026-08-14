@@ -33,6 +33,7 @@ function _irA(nombre) {
   var sh = ss.getSheetByName(nombre)
   if (!sh) { ss.toast('No existe la hoja ' + nombre, 'PADDS', 3); return }
   sh.activate()
+  ss.toast('Abierta: ' + nombre, 'PADDS', 1)
 }
 
 // ─────────────────────────────────────────────────────────

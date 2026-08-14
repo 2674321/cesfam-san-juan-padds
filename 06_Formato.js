@@ -373,7 +373,7 @@ function _aplicarFormatoVisual(sh, lr, lc) {
     .setHorizontalAlignment('center').setBackground('#CCFBF1')
     .setNote('Resultados del buscador: "X de Y pacientes". Límite: 50 resultados en la ventana de búsqueda.')
 
-  sh.getRange('E2').setValue('Mostrar ▾').setFontStyle('italic')
+  sh.getRange('E2').setValue('Filtros ▾').setFontStyle('italic')
     .setFontColor('#64748B').setFontSize(12).setHorizontalAlignment('center')
     .setNote('Elige en F2 (una celda) qué sección mostrar temporalmente. Las demás columnas se ocultan; "TODAS" restaura. El buscador (B2), el filtro de estado (G2) y esta fila siempre quedan visibles.')
   var listaF = ['TODAS']
@@ -706,7 +706,7 @@ function _pintarFechasInvalidas(sh, lr, lc, soloFila) {
       }
       if (NO_FUTURA[col] && _parseDate(v).getTime() > hoyT) {
         toca = true
-        nb.push('#FEF3C7'); nf.push('#A16207'); nw.push('normal')
+        nb.push('#FEF3C7'); nf.push('#B45309'); nw.push('normal')
         notas.push('⚠️ Fecha futura: debe ser una fecha ya realizada (¿año mal escrito?)')
         continue
       }
@@ -940,7 +940,7 @@ function _refrescarFormatoCondicional(sh, lr, lc) {
   }
   _porCol(_estadoColores, COL.VITAL, sh.getRange(4, COL.VITAL, lr - 3, 1))
 
-  var _vacColores = { 'SI': ['#DCFCE7', '#15803D'], 'R': ['#DCFCE7', '#15803D'], 'NO': ['#FEE2E2', '#B91C1C'], 'P': ['#FEF3C7', '#B45309'], 'N/A': ['#F1F5F9', '#94A3B8'] }
+  var _vacColores = { 'SI': ['#DCFCE7', '#15803D'], 'R': ['#DCFCE7', '#15803D'], 'NO': ['#FEE2E2', '#B91C1C'], 'P': ['#FEF3C7', '#B45309'], 'N/A': ['#F1F5F9', '#64748B'] }
   for (var _vci = 0; _vci < _VACUNA_COLS.length; _vci++) {
     var _vcc = _VACUNA_COLS[_vci]
     if (_vcc <= lc) _porCol(_vacColores, _vcc, sh.getRange(4, _vcc, lr - 3, 1))
@@ -949,12 +949,12 @@ function _refrescarFormatoCondicional(sh, lr, lc) {
   if (COL.ESTADO_NUTRICIONAL <= lc) _porCol({
     'NORMAL': ['#DCFCE7', '#15803D'], 'SOBREPESO': ['#FFEDD5', '#C2410C'],
     'OBESIDAD': ['#FEE2E2', '#B91C1C'], 'BAJO PESO': ['#FEF3C7', '#B45309'],
-    'N/A': ['#EEF1F5', '#64748B'],
+    'N/A': ['#F1F5F9', '#64748B'],
   }, COL.ESTADO_NUTRICIONAL, sh.getRange(4, COL.ESTADO_NUTRICIONAL, lr - 3, 1))
 
   if (COL.RESULTADO_ZARIT <= lc) _porCol({
     'SIN SOBRECARGA': ['#DCFCE7', '#15803D'], 'SOBRECARGA LEVE': ['#FFEDD5', '#C2410C'],
-    'SOBRECARGA INTENSA': ['#FEE2E2', '#B91C1C'], 'N/A': ['#EEF1F5', '#64748B'],
+    'SOBRECARGA INTENSA': ['#FEE2E2', '#B91C1C'], 'N/A': ['#F1F5F9', '#64748B'],
   }, COL.RESULTADO_ZARIT, sh.getRange(4, COL.RESULTADO_ZARIT, lr - 3, 1))
 
   for (var _di = 0; _di < _FECHAS_VA.length; _di++) {
@@ -975,7 +975,7 @@ function _refrescarFormatoCondicional(sh, lr, lc) {
   // Observaciones con avisos ⚠️ (fechas inválidas, atenciones mal registradas, etc.)
   if (COL.OBSERVACIONES <= lc) {
     rules.push(_rCF('=ISNUMBER(SEARCH("' + '\u26a0\ufe0f' + '",$' + colToLetter(COL.OBSERVACIONES) + '4))',
-      sh.getRange(4, COL.OBSERVACIONES, lr - 3, 1), { bg: '#FEF3C7', fg: '#A16207' }))
+      sh.getRange(4, COL.OBSERVACIONES, lr - 3, 1), { bg: '#FEF3C7', fg: '#B45309' }))
   }
 
   try { sh.setConditionalFormatRules(rules) } catch(e) {}
@@ -1472,7 +1472,7 @@ function crearDashboard() {
   var BS = SpreadsheetApp.BorderStyle.SOLID
   var BSM = SpreadsheetApp.BorderStyle.SOLID_MEDIUM
   var GREEN = _UI.hdrBg, GREEN_L = '#EEF2F7', GREEN_M = _UI.accent2
-  var W = '#ffffff', T = '#212121', TG = '#757575'
+  var W = '#ffffff', T = '#1E293B', TG = '#64748B'
   var SEXO = colToLetter(7), EDAD = colToLetter(10)
   var PRIO = colToLetter(COL.PRIORIDAD), DEP = colToLetter(26)
   var EMPC = colToLetter(22), EMPU = colToLetter(66)
@@ -1534,7 +1534,7 @@ function crearDashboard() {
     [1, 2, 'Total Pacientes', '=COUNTA(' + P + 'C4:C)', GREEN],
     [3, 2, 'Vigentes',        cf(P + 'F4:F', 'VIGENTE'), '#15803D'],
     [5, 2, 'Fallecidos',      cf(P + 'F4:F', 'FALLECIDO'), '#B91C1C'],
-    [7, 2, 'Egresados',       cf(P + 'F4:F', 'EGRESO*'), '#C2410C'],
+    [7, 2, 'Egresados',       cf(P + 'F4:F', 'EGRESO*'), '#0369A1'],
   ]
   resumen.forEach(function(x) { cardLabel(RC, x[0], x[1], x[2], x[3]); cardVal(RC + 1, x[0], x[1], x[3], x[3]) })
   sh.setRowHeight(RC, 22); sh.setRowHeight(RC + 1, 48)
@@ -1897,13 +1897,13 @@ function crearDashboard() {
   R++
   for (var _ai2 = 0; _ai2 < _CONTROL_FECHAS.length; _ai2++) {
     var c = _CONTROL_FECHAS[_ai2]
-    var bgA2 = _ai2 % 2 === 0 ? '#f5f7fa' : '#eef1f5'
+    var bgA2 = _ai2 % 2 === 0 ? '#FFFFFF' : '#F8FAFC'
     sh.getRange(R + _ai2, 1).setValue(c[0])
       .setFontFamily(_UI.font).setFontSize(9).setFontColor(T).setBackground(bgA2).setVerticalAlignment('middle')
       .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     var clF = colToLetter(c[1])
     sh.getRange(R + _ai2, 2, 1, 8).merge().setValue('Fecha: columna ' + clF + '  →  vigencia por color')
-      .setFontFamily('Consolas,monospace').setFontSize(9).setFontColor('#555').setBackground(bgA2)
+      .setFontFamily('Consolas,monospace').setFontSize(9).setFontColor('#64748B').setBackground(bgA2)
       .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.setRowHeight(R + _ai2, 20)
   }
@@ -1911,7 +1911,7 @@ function crearDashboard() {
 
   sh.getRange(R, 1, 1, 9).merge()
   sh.getRange(R, 1).setValue('Prioridad General (col ' + COL.PRIORIDAD + '): VENCIDO → URGENTE | POR VENCER → POR REVISAR | AL DIA → AL DIA | sin datos → N/A')
-    .setFontFamily(_UI.font).setFontSize(9).setFontStyle('italic').setFontColor('#555').setBackground('#F1F5F9')
+    .setFontFamily(_UI.font).setFontSize(9).setFontStyle('italic').setFontColor('#64748B').setBackground('#F1F5F9')
     .setVerticalAlignment('middle').setHorizontalAlignment('center')
     .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
   sh.setRowHeight(R, 24)
@@ -2020,9 +2020,9 @@ function actualizarDashboard() {
     sh.getRange(secAl + 5, 1, 1, 9).merge()
     sh.getRange(secAl + 5, 1)
       .setValue('Con ≥1 control VENCIDO: ' + conV + '   ·   Con ≥1 POR VENCER: ' + conPv + '   ·   Sin ningún control registrado: ' + sinCtrl + '   (' + data.length + ' pacientes)')
-      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor('#92400E')
+      .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor('#B45309')
       .setBackground('#FEF3C7').setVerticalAlignment('middle').setHorizontalAlignment('center')
-      .setBorder(true, true, true, true, true, true, '#FCD34D', BS)
+      .setBorder(true, true, true, true, true, true, '#FDE68A', BS)
     sh.setRowHeight(secAl + 5, 22)
   }
 

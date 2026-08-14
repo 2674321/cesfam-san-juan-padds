@@ -471,7 +471,7 @@ function buscarPaciente() {
   var q = r.getResponseText().trim().toLowerCase()
   if (!q) return
   var sh = _hojaAgenda()
-  if (!sh) return
+  if (!sh) { ss.toast('Primero crea una hoja de agenda (📅 Agenda → ➕ Agregar semana)', 'Agenda', 4); return }
   var maxCol = GI[2] + PC + 1
   var d = sh.getRange(1, 1, sh.getLastRow(), maxCol).getValues()
   var resultados = []
@@ -511,10 +511,10 @@ function resumen() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   ss.toast('Generando resumen…', 'PADDS', 1)
   var sh = _hojaAgenda()
-  if (!sh) return
+  if (!sh) { ss.toast('Primero crea una hoja de agenda (📅 Agenda → ➕ Agregar semana)', 'Agenda', 4); return }
   var maxCol = GI[2] + PC
   var lr = sh.getLastRow()
-  if (lr < 1) return
+  if (lr < 1) { ss.toast('La agenda aún no tiene contenido que resumir', 'Agenda', 3); return }
   var d = sh.getRange(1, 1, lr, maxCol).getValues()
   var sem = 0, vdi = 0, abre = 0, lle = 0, col = 0
   var dcPorGI = [0, 0, 0]
@@ -543,15 +543,22 @@ function resumen() {
   }
   var dc = dcPorGI[0] + dcPorGI[1] + dcPorGI[2]
   var oc = sem > 0 ? Math.round(lle / (sem * 11) * 100) : 0
-  var _sep = ''
-  for (var _si = 0; _si < 20; _si++) _sep += '\u2500'
-  SpreadsheetApp.getUi().alert(
-'📊 RESUMEN AGENDA\n' + _sep +
-'\n📅 Semanas: ' + sem +
-'\n✏️ Días con datos: ' + dc +
-'\n🏠 VDI: ' + vdi +
-'\n⚡ Abreviadas: ' + abre +
-'\n🍽 Colaciones: ' + col +
-'\n📝 Ocupados: ' + lle +
-'\n📈 Ocupación: ' + oc + '%')
+  var b = []
+  b.push('<div class="h">📊 Resumen de la agenda</div>')
+  b.push('<div class="grid3">' +
+    '<div class="kpi"><div class="n">' + sem + '</div><div class="l">Semanas</div></div>' +
+    '<div class="kpi"><div class="n">' + dc + '</div><div class="l">Días con datos</div></div>' +
+    '<div class="kpi"><div class="n">' + oc + '%</div><div class="l">Ocupación</div></div></div>')
+  b.push('<div class="card">' +
+    '<div class="kv"><span class="k">🏠 VDI</span><span class="v">' + vdi + '</span></div>' +
+    '<div class="kv"><span class="k">⚡ Abreviadas</span><span class="v">' + abre + '</span></div>' +
+    '<div class="kv"><span class="k">🍽 Colaciones</span><span class="v">' + col + '</span></div>' +
+    '<div class="kv"><span class="k">📝 Ocupados</span><span class="v">' + lle + '</span></div></div>')
+  b.push('<div class="sub">' + new Date().toLocaleDateString('es-CL') + ' · PADDS</div>')
+  SpreadsheetApp.getUi().showSidebar(
+    HtmlService.createHtmlOutput(
+      '<!DOCTYPE html><html><head><base target="_top"><style>' + _uiCss() + _uiExtCss() + '</style></head><body>' +
+      b.join('') + '</body></html>')
+      .setTitle('Resumen de la semana · PADDS').setWidth(360)
+  )
 }
