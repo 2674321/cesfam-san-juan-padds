@@ -145,14 +145,17 @@ function onEdit(e) {
 
         try {
           var _lcAge = sh.getLastColumn()
-          for (var _ar = row; _ar < row + numRows; _ar++) {
-            if (_ar < 4) continue
-            var _rowAge = sh.getRange(_ar, 1, 1, _lcAge).getValues()[0]
-            var _nacA = _parseDate(_rowAge[8])
-            if (_nacA) {
-              var _edadA = _calcularEdad(_nacA)
-              if (String(_rowAge[COL.EDAD_USUARIO - 1]) !== String(_edadA)) {
-                sh.getRange(_ar, COL.EDAD_USUARIO).setValue(_edadA)
+          var _r0Age = Math.max(row, 4)
+          var _nrAge = row + numRows - _r0Age
+          if (_nrAge > 0) {
+            var _blockAge = sh.getRange(_r0Age, 1, _nrAge, _lcAge).getValues()
+            for (var _ar = 0; _ar < _nrAge; _ar++) {
+              var _nacA = _parseDate(_blockAge[_ar][8])
+              if (_nacA) {
+                var _edadA = _calcularEdad(_nacA)
+                if (String(_blockAge[_ar][COL.EDAD_USUARIO - 1]) !== String(_edadA)) {
+                  sh.getRange(_r0Age + _ar, COL.EDAD_USUARIO).setValue(_edadA)
+                }
               }
             }
           }

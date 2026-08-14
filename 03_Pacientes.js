@@ -332,6 +332,13 @@ function agregarPaciente() {
   } catch(e) {}
 
   sh.getRange(nr, 1).activate()
+  // La regla de RUN duplicado cubre hasta la última fila formateada: la
+  // re-aplico para que la fila nueva también responda (mismo costo de una
+  // acción manual).
+  try {
+    _optsRefsCache = null
+    _refrescarFormatoCondicional(sh, sh.getLastRow(), sh.getLastColumn())
+  } catch (eCF3) {}
   ss.toast('Paciente #' + num + ' agregado — completa los datos en la fila', 'Pacientes', 4)
 }
 
