@@ -161,14 +161,15 @@ chk('Sector: "PENDIENTE" distinto de "AMARILLO" (gris azulado)', _SECTOR_COLORS[
     'limpiarSemanasPasadas', 'irAHoy', 'irAFecha', 'buscarPaciente', 'resumen',
     'agregarPaciente', 'buscarEnPacientes', 'eliminarPaciente', 'ordenarPacientes',
     'reindexarPacientes', 'limpiarPacientesCompleto', 'formatearDatos',
-    'repararFormatoPacientes', 'verificarIntegridadRUN', 'depurarDuplicados',
+    'repararFormatoPacientes', 'verificarIntegridadRUN', 'formatearRUTPacientes',
+    'depurarDuplicados', 'limpiarFilasVaciasPacientes', 'diagnosticarFilasExtra',
     'recalcularTodo', 'mostrarAlertas', 'verFichaPaciente', 'corregirYMejorarIngresos',
     'configurarTriggerIngresos', 'enviarIngresasAPacientes',
     'crearFormularioBase', 'mostrarSidebarEstadisticas', 'aprobarFormularios',
     'rechazarFormularios', 'limpiarFormulariosAprobados', 'configurarTriggerFormulario',
     'organizarHojas', 'configurarResaltadoFila', 'crearParametros',
     'crearDashboard', 'actualizarDashboard', 'repararFormulas', 'ejecutarPruebas',
-    'inicializarPADDS',
+    'inicializarPADDS', 'configurarBackupAutomatico', 'ejecutarBackup',
     'mostrarAyudaRapida', 'crearInstrucciones', 'rehacerMenus', 'acercaDelSistema'
   ]
   var faltantes = []

@@ -77,7 +77,7 @@ function _restaurarVisualSinConfirmar(sh, ss) {
 function formatearDatos() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var chk = _hojaPacientesValida(ss)
-  if (!chk.ok) { ss.toast(chk.msg, 'Estructura de la hoja incorrecta', 6); return }
+  if (!chk.ok) { ss.toast(chk.msg, 'Pacientes', 6); return }
   var sh = chk.sh
   var ui = SpreadsheetApp.getUi()
   var r = ui.alert('Formatear datos de ' + HOJA_PAC,
@@ -135,7 +135,7 @@ function _formatearDatosSinConfirmar(sh, ss) {
 function repararFormatoPacientes() {
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var chk = _hojaPacientesValida(ss)
-  if (!chk.ok) { ss.toast(chk.msg, 'Estructura de la hoja incorrecta', 6); return }
+  if (!chk.ok) { ss.toast(chk.msg, 'Pacientes', 6); return }
   var sh = chk.sh
   var ui = SpreadsheetApp.getUi()
   var r = ui.alert('Reparar formato de ' + HOJA_PAC,
