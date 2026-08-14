@@ -142,7 +142,7 @@ function _ingAplicarFormato(sh, d) {
 
   var bgArr = []
   for (var r = desde; r <= hasta; r++) {
-    var bg = (r - hr) % 2 === 1 ? _UI.zebraBg[0] : _UI.zebraBg[1]
+    var bg = (r - hr) % 2 === 0 ? _UI.zebraBg[0] : _UI.zebraBg[1]
     var rowArr = []
     for (var c2 = 0; c2 < lcF; c2++) rowArr.push(bg)
     bgArr.push(rowArr)
@@ -418,7 +418,7 @@ function _ingFormatearFila(sh, row, numRows, d) {
   var bgs = [], als = [], fmts = []
   for (var i = 0; i < maxFilas; i++) {
     var r = row + i
-    var bg = (r - hr) % 2 === 1 ? _UI.zebraBg[0] : _UI.zebraBg[1]
+    var bg = (r - hr) % 2 === 0 ? _UI.zebraBg[0] : _UI.zebraBg[1]
     var bgRow = [], alRow = [], fmRow = []
     for (var c = 0; c < lcF; c++) {
       bgRow.push(bg)
@@ -882,7 +882,7 @@ function _ingReBandear(sh, d, desdeFila) {
 
   var bgArr = []
   for (var r = desdeFila; r <= lr; r++) {
-    var bg = (r - hr) % 2 === 1 ? _UI.zebraBg[0] : _UI.zebraBg[1]
+    var bg = (r - hr) % 2 === 0 ? _UI.zebraBg[0] : _UI.zebraBg[1]
     var rowArr = []
     for (var c = 0; c < lcF; c++) rowArr.push(bg)
     bgArr.push(rowArr)
