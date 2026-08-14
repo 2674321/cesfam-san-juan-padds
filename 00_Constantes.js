@@ -9,19 +9,19 @@
 var HOJA_PAC = 'Pacientes'
 var HOJA_FORM = 'Recepción Formulario Profesional'
 var PAC_SECCIONES = [
-  { nombre: 'IDENTIFICACIÓN',             ini: 1,  fin: 15, bg: '#35648F', bg2: '#44749F', fg: '#ffffff' },
-  { nombre: 'CUIDADOR PRINCIPAL',         ini: 16, fin: 25, bg: '#A1582F', bg2: '#B06E44', fg: '#ffffff' },
-  { nombre: 'CLASIFICACIÓN / DEPENDENCIA',ini: 26, fin: 31, bg: '#6D4E8E', bg2: '#7F619E', fg: '#ffffff' },
-  { nombre: 'PATOLOGÍAS CRÓNICAS',        ini: 32, fin: 48, bg: '#A44343', bg2: '#B15A5A', fg: '#ffffff' },
-  { nombre: 'CONTROLES Y SEGUIMIENTO',    ini: 49, fin: 65, bg: '#2F6E62', bg2: '#3F7E72', fg: '#ffffff' },
-  { nombre: 'SOCIAL / PSICOLÓGICO',       ini: 66, fin: 77, bg: '#9C4A68', bg2: '#AD5E7C', fg: '#ffffff' },
-  { nombre: 'PAÑALES',                    ini: 78, fin: 80, bg: '#3A7E8C', bg2: '#4A8E9C', fg: '#ffffff' },
-  { nombre: 'INMUNIZACIÓN',               ini: 81, fin: 84, bg: '#4A6087', bg2: '#5B7299', fg: '#ffffff' },
-  { nombre: 'CAPACITACIONES CUIDADOR',    ini: 85, fin: 92, bg: '#6B5849', bg2: '#7A6758', fg: '#ffffff' },
-  { nombre: 'SONDA FOLEY',                ini: 93, fin: 96, bg: '#4F7A52', bg2: '#5F8A62', fg: '#ffffff' },
-  { nombre: 'CURACIONES AVANZADAS',       ini: 97, fin: 104,bg: '#B9603C', bg2: '#C5704E', fg: '#ffffff' },
-  { nombre: 'CONTROL DE SIGNOS VITALES (CSV)', ini: 105,fin: 109,bg: '#A23C3C', bg2: '#B24E4E', fg: '#ffffff' },
-  { nombre: 'GESTIÓN',                    ini: 110,fin: 112,bg: '#4A6572', bg2: '#5B7684', fg: '#ffffff' },
+  { nombre: 'IDENTIFICACIÓN',             ini: 1,  fin: 15, bg: '#3B5B7C', bg2: '#4D6D8E', fg: '#ffffff' },
+  { nombre: 'CUIDADOR PRINCIPAL',         ini: 16, fin: 25, bg: '#94603C', bg2: '#A5704C', fg: '#ffffff' },
+  { nombre: 'CLASIFICACIÓN / DEPENDENCIA',ini: 26, fin: 31, bg: '#62508A', bg2: '#74629C', fg: '#ffffff' },
+  { nombre: 'PATOLOGÍAS CRÓNICAS',        ini: 32, fin: 48, bg: '#933F3F', bg2: '#A55151', fg: '#ffffff' },
+  { nombre: 'CONTROLES Y SEGUIMIENTO',    ini: 49, fin: 65, bg: '#2E6E61', bg2: '#408476', fg: '#ffffff' },
+  { nombre: 'SOCIAL / PSICOLÓGICO',       ini: 66, fin: 77, bg: '#8F4662', bg2: '#A15872', fg: '#ffffff' },
+  { nombre: 'PAÑALES',                    ini: 78, fin: 80, bg: '#37798A', bg2: '#478A9B', fg: '#ffffff' },
+  { nombre: 'INMUNIZACIÓN',               ini: 81, fin: 84, bg: '#465B85', bg2: '#586D97', fg: '#ffffff' },
+  { nombre: 'CAPACITACIONES CUIDADOR',    ini: 85, fin: 92, bg: '#5F5144', bg2: '#6F6154', fg: '#ffffff' },
+  { nombre: 'SONDA FOLEY',                ini: 93, fin: 96, bg: '#48704D', bg2: '#58805D', fg: '#ffffff' },
+  { nombre: 'CURACIONES AVANZADAS',       ini: 97, fin: 104,bg: '#A25A36', bg2: '#B26B47', fg: '#ffffff' },
+  { nombre: 'CONTROL DE SIGNOS VITALES (CSV)', ini: 105,fin: 109,bg: '#923939', bg2: '#A44B4B', fg: '#ffffff' },
+  { nombre: 'GESTIÓN',                    ini: 110,fin: 112,bg: '#43596B', bg2: '#546A7C', fg: '#ffffff' },
 ]
 
 var PAC_ANCHOS = [

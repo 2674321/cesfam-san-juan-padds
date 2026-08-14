@@ -352,9 +352,9 @@ function _aplicarFormatoVisual(sh, lr, lc) {
   try { sh.setFrozenRows(3) } catch(eFR) {}
 
     sh.setRowHeight(2, 30)
-  sh.getRange(2, 1, 1, lc).setBackground('#FEF3C7')
+  sh.getRange(2, 1, 1, lc).setBackground('#F0FDFA')
     .setFontFamily('Arial').setFontSize(10).setVerticalAlignment('middle')
-    .setBorder(false, false, true, false, false, false, _UI.border, SpreadsheetApp.BorderStyle.SOLID)
+    .setBorder(false, false, true, false, false, false, _UI.accentL, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
   for (var s2 = 0; s2 < PAC_SECCIONES.length; s2++) {
     var sec2 = PAC_SECCIONES[s2]
     if (sec2.ini > lc) break
@@ -365,16 +365,16 @@ function _aplicarFormatoVisual(sh, lr, lc) {
     .setNote('Buscador vivo: escribe el nombre, RUN o teléfono en B2 y presiona Enter (las filas que no coinciden se ocultan temporalmente).\n\nSecciones: en F2 elige qué sección mostrar ("TODAS" restaura). D2 muestra cuántos pacientes coinciden.')
 
   var nf = SpreadsheetApp.newTextStyle().setFontFamily('Arial').setFontSize(11)
-    .setForegroundColor('#666666').build()
+    .setForegroundColor('#0F766E').build()
 
   sh.getRange(2, 2, 1, 2).merge()
   sh.getRange(2, 2, 1, 2).setTextStyle(nf).setHorizontalAlignment('center')
-  sh.getRange('D2').setFontWeight('bold').setFontSize(11).setFontColor('#1E293B')
-    .setHorizontalAlignment('center').setBackground('#FEF3C7')
+  sh.getRange('D2').setFontWeight('bold').setFontSize(11).setFontColor('#115E59')
+    .setHorizontalAlignment('center').setBackground('#CCFBF1')
     .setNote('Resultados del buscador: "X de Y pacientes". Límite: 50 resultados en la ventana de búsqueda.')
 
   sh.getRange('E2').setValue('Mostrar ▾').setFontStyle('italic')
-    .setFontColor('#555555').setFontSize(12).setHorizontalAlignment('center')
+    .setFontColor('#64748B').setFontSize(12).setHorizontalAlignment('center')
     .setNote('Elige en F2 (una celda) qué sección mostrar temporalmente. Las demás columnas se ocultan; "TODAS" restaura. El buscador (B2), el filtro de estado (G2) y esta fila siempre quedan visibles.')
   var listaF = ['TODAS']
   for (var _lf = 0; _lf < PAC_SECCIONES.length; _lf++) {
@@ -416,8 +416,7 @@ function _aplicarFormatoVisual(sh, lr, lc) {
     for (var r = 0; r < dataRows; r++) {
       var bgRow = []
       var alt = _UI.zebraBg[r % 2]
-      var fzAlt = _UI.frozenBg[r % 2]
-      for (var c = 0; c < lc; c++) bgRow.push(c < _FREEZE_COLS ? fzAlt : alt)
+      for (var c = 0; c < lc; c++) bgRow.push(alt)
       bgs.push(bgRow)
     }
     sh.getRange(4, 1, dataRows, lc).setBackgrounds(bgs)
@@ -934,10 +933,10 @@ function _refrescarFormatoCondicional(sh, lr, lc) {
   }
 
   var _estadoColores = {
-    'VIGENTE': ['#DCFCE7', '#15803D'], 'FALLECIDO': ['#FEE2E2', '#B91C1C'],
-    'EGRESO': ['#FFEDD5', '#C2410C'], 'EGRESO POR ALTA': ['#EEF1F5', '#64748B'],
-'SUSPENDIDO': ['#EEF1F5', '#475569'], 'ALTA': ['#CCFBF1', '#0F766E'],
-  'TRASLADO': ['#CCFBF1', '#115E59'], 'PENDIENTE': ['#FEF3C7', '#B45309'],
+    'VIGENTE': _ESTADO_COLORS.VIGENTE, 'FALLECIDO': _ESTADO_COLORS.FALLECIDO,
+    'EGRESO': _ESTADO_COLORS.EGRESO, 'EGRESO POR ALTA': _ESTADO_COLORS['EGRESO POR ALTA'],
+    'SUSPENDIDO': _ESTADO_COLORS.SUSPENDIDO, 'ALTA': _ESTADO_COLORS.ALTA,
+    'TRASLADO': _ESTADO_COLORS.TRASLADO, 'PENDIENTE': _ESTADO_COLORS.PENDIENTE,
   }
   _porCol(_estadoColores, COL.VITAL, sh.getRange(4, COL.VITAL, lr - 3, 1))
 
@@ -1669,29 +1668,29 @@ function crearDashboard() {
   for (var va = 0; va < vacas.length; va++) {
     var vrow = vacRow + 1 + va
     var vcl = colToLetter(vacas[va][1])
-    var vbg = va % 2 === 0 ? W : '#F0FDFA'
+    var vbg = va % 2 === 0 ? W : '#F8FAFC'
     var vr = P + vcl + '4:' + vcl
     var vf = 'COUNTIF(' + vr + SEP + '">0")+COUNTIF(' + vr + SEP + '"SI")+COUNTIF(' + vr + SEP + '"R")'
     sh.getRange(vrow, 1).setValue(vacas[va][0])
       .setFontFamily(_UI.font).setFontSize(10).setFontColor(T).setBackground(vbg).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(vrow, 2).setFormula('=' + vf)
       .setFontFamily(_UI.font).setFontSize(10).setFontColor(GREEN).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(vrow, 3).setFormula('=' + _totalValCell + '-(' + vf + ')')
       .setNumberFormat('0')
       .setFontFamily(_UI.font).setFontSize(10).setFontColor(TG).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(vrow, 4).setFormula('=IFERROR((' + vf + ')/' + _totalValCell + SEP + '0)')
       .setNumberFormat('0%')
       .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold').setFontColor(GREEN).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(vrow, 5).setFormula('=COUNTIF(' + vr + SEP + '"P")')
       .setFontFamily(_UI.font).setFontSize(10).setFontColor('#C2410C').setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(vrow, 6).setFormula('=COUNTIF(' + vr + SEP + '"NO")+COUNTIF(' + vr + SEP + '"N/A")')
       .setFontFamily(_UI.font).setFontSize(10).setFontColor(TG).setBackground(vbg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.setRowHeight(vrow, 22)
   }
   R = vacRow + 1 + vacas.length + 2
@@ -1715,7 +1714,7 @@ function crearDashboard() {
     var cn = 32 + p
     var cl = colToLetter(cn)
     var nm = String(pHeaders[p] || '').trim() || 'Patologia ' + cn
-    var bg = p % 2 === 0 ? W : '#F0FDFA'
+    var bg = p % 2 === 0 ? W : '#F8FAFC'
 
     var countFormula = ''
     if (cn === 48) countFormula = 'COUNTA(' + P + cl + '4:' + cl + ')'
@@ -1723,18 +1722,18 @@ function crearDashboard() {
 
     sh.getRange(pr, 1).setValue(nm)
       .setFontFamily(_UI.font).setFontSize(10).setFontColor(T).setBackground(bg).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(pr, 2).setFormula('=' + countFormula)
       .setFontFamily(_UI.font).setFontSize(10).setFontColor(GREEN).setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(pr, 3).setFormula('=' + _totalValCell + '-(' + countFormula + ')')
       .setNumberFormat('0')
       .setFontFamily(_UI.font).setFontSize(10).setFontColor(TG).setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(pr, 4).setFormula('=IFERROR(' + countFormula + '/' + _totalValCell + SEP + '0)')
       .setNumberFormat('0%')
       .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold').setFontColor(GREEN).setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.setRowHeight(pr, 22)
   }
   R = pathRow + 1 + pHeaders.length + 2
@@ -1757,28 +1756,28 @@ function crearDashboard() {
     if (fc > lc) continue
     var vr = R + vigRows
     var nm2 = def[0]
-    var bg2 = vigRows % 2 === 0 ? '#FFFFFF' : '#F0FDFA'
+    var bg2 = vigRows % 2 === 0 ? '#FFFFFF' : '#F8FAFC'
     var mesesM = _mesesControl(_paramsDash, def[2])
 
     sh.getRange(vr, 1).setValue(nm2)
       .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor(T).setBackground(bg2).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
 
     sh.getRange(vr, 2, 1, 5).setValues([[0, 0, 0, 0, 0]])
       .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor(T).setBackground(bg2)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(vr, 7).setFormula('=SUM(B' + vr + ':F' + vr + ')')
       .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor(GREEN).setBackground(bg2)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(vr, 8).setFormula('=IF(G' + vr + '=0' + SEP + ' ""' + SEP + ' ROUND(B' + vr + '/G' + vr + '*100' + SEP + ' 0))')
       .setFontFamily(_UI.font).setFontSize(9).setFontWeight('bold').setFontColor('#15803D').setBackground(bg2)
       .setHorizontalAlignment('center').setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(vr, 9).setFormula('=SPARKLINE(B' + vr + ':F' + vr + ')')
       .setBackground(bg2).setVerticalAlignment('middle').setHorizontalAlignment('center')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.setRowHeight(vr, 22)
     vigRows++
   }
@@ -1832,21 +1831,21 @@ function crearDashboard() {
     for (var tr = 0; tr < tbl.length; tr++) {
       var rr = gT + tr
       var esHdr = tr === 0
-      var bg = esHdr ? GREEN : (tr % 2 === 0 ? W : '#F0FDFA')
+      var bg = esHdr ? GREEN : (tr % 2 === 0 ? W : '#F8FAFC')
       var lb = tbl[tr][0]
       var fc = esHdr ? W : (_tinte[lb] || T)
       sh.getRange(rr, col).setValue(lb)
         .setFontFamily(_UI.font).setFontSize(esHdr ? 9 : 10).setFontWeight('bold')
         .setFontColor(fc).setBackground(esHdr ? GREEN : (_tinte[lb] ? '#ffffff' : bg))
         .setHorizontalAlignment('center').setVerticalAlignment('middle')
-        .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+        .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
       var c2 = sh.getRange(rr, col + 1)
       if (esHdr) c2.setValue('N')
       else c2.setFormula(tbl[tr][1])
       c2.setFontFamily(_UI.font).setFontSize(esHdr ? 9 : 10).setFontWeight('bold')
         .setFontColor(esHdr ? W : GREEN).setBackground(bg)
         .setHorizontalAlignment('center').setVerticalAlignment('middle')
-        .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+        .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
       sh.setRowHeight(rr, esHdr ? 18 : 20)
     }
   }
@@ -1882,10 +1881,10 @@ function crearDashboard() {
     sh.getRange(R + _li, 1).setValue(s[0])
       .setFontFamily(_UI.font).setFontSize(10).setFontWeight('bold')
       .setFontColor(_leyColors.fg[_li]).setBackground(_leyColors.bg[_li]).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.getRange(R + _li, 2, 1, 8).merge().setValue(s[1])
       .setFontFamily(_UI.font).setFontSize(10).setFontColor('#333').setBackground(_leyColors.bg[_li])
-      .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.setRowHeight(R + _li, 22)
   }
   R += stLbl.length + 2
@@ -1901,11 +1900,11 @@ function crearDashboard() {
     var bgA2 = _ai2 % 2 === 0 ? '#f5f7fa' : '#eef1f5'
     sh.getRange(R + _ai2, 1).setValue(c[0])
       .setFontFamily(_UI.font).setFontSize(9).setFontColor(T).setBackground(bgA2).setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     var clF = colToLetter(c[1])
     sh.getRange(R + _ai2, 2, 1, 8).merge().setValue('Fecha: columna ' + clF + '  →  vigencia por color')
       .setFontFamily('Consolas,monospace').setFontSize(9).setFontColor('#555').setBackground(bgA2)
-      .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+      .setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
     sh.setRowHeight(R + _ai2, 20)
   }
   R += _CONTROL_FECHAS.length + 2
@@ -1914,7 +1913,7 @@ function crearDashboard() {
   sh.getRange(R, 1).setValue('Prioridad General (col ' + COL.PRIORIDAD + '): VENCIDO → URGENTE | POR VENCER → POR REVISAR | AL DIA → AL DIA | sin datos → N/A')
     .setFontFamily(_UI.font).setFontSize(9).setFontStyle('italic').setFontColor('#555').setBackground('#F1F5F9')
     .setVerticalAlignment('middle').setHorizontalAlignment('center')
-    .setBorder(true, true, true, true, true, true, '#BBF7D0', BS)
+    .setBorder(true, true, true, true, true, true, '#E2E8F0', BS)
   sh.setRowHeight(R, 24)
   R++
 

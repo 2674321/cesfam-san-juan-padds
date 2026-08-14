@@ -252,8 +252,8 @@ function crearFormularioBase() {
   sh.setFrozenRows(0)
 
   var lc = 19, WHITE = '#ffffff'
-  var SEC_COLORS = ['#475569', '#0F766E', '#C2410C', '#334155']
-  var SEC_TINTS = ['#EEF1F5', '#E0F2FE', '#FFEDD5', '#E4E9EB']
+  var SEC_COLORS = ['#475569', '#0F766E', '#15803D', '#7E22CE']
+  var SEC_TINTS = ['#EEF2F7', '#E0F2FE', '#DCFCE7', '#F3E8FF']
   var BS = SpreadsheetApp.BorderStyle.SOLID
   var BS_MED = SpreadsheetApp.BorderStyle.SOLID_MEDIUM
 
