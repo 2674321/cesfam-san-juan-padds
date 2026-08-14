@@ -74,7 +74,14 @@ function _borrarFilasVacias(sh, desdeFila) {
       for (var c = 0; c < lc; c++) {
         if (formulas[r][c] !== '') { esVacia = false; break }
         var v = vals[r][c]
-        if (v != null && String(v).trim() !== '') { esVacia = false; break }
+        if (v == null) continue
+        var s = String(v).trim()
+        // Celdas de casilla (checkbox) sin marcar devuelven FALSE, y valores
+        // vacíos de formularios pueden quedar como "N/A": una fila que SOLO
+        // tiene FALSE/N/A es una fila basura (se ve vacía) y debe poder borrarse.
+        if (s === '' || s === 'N/A' || s === 'FALSE' || s === 'false' || v === false) continue
+        esVacia = false
+        break
       }
     }
     if (esVacia) {
