@@ -116,15 +116,15 @@ function _showAlertasSidebar(urgentes, vencidos, porVencer, pendientes, params) 
   var dias = params ? (params['DIAS_AVISO'] != null ? Number(params['DIAS_AVISO']) : 30) : 30
   var part = []
 
-  part.push('<style>' +
-    'body{font-family:Arial,sans-serif;font-size:13px;margin:0;color:#222;overflow-x:hidden}' +
-    '.hdr{padding:16px 16px 6px}' +
-    '.hdr h2{margin:0;font-size:18px}' +
-    '.hdr .sub{font-size:12px;color:#888;margin-top:2px}' +
-    '.info{font-size:11px;color:#64748B;margin:6px 16px 10px;padding:6px 10px;background:#F1F5F9;border-radius:4px;line-height:1.6}' +
-    '.info i{font-style:normal;padding:1px 5px;border-radius:3px;font-weight:600}' +
+  part.push('<style>' + _uiCss() +
+    'body{padding:0;overflow-x:hidden}' +
+    '.hdr{padding:14px 16px 4px}' +
+    '.hdr h2{margin:0;font-size:18px;color:#1E293B}' +
+    '.hdr .sub{font-size:12px;color:#64748B;margin-top:2px}' +
+    '.info{font-size:11px;color:#64748B;margin:8px 16px 4px;padding:6px 10px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;line-height:1.6}' +
+    '.info i{font-style:normal;padding:1px 5px;border-radius:4px;font-weight:600}' +
     '.i-r{color:#B91C1C}.i-o{color:#C2410C}.i-y{color:#B45309}' +
-    'h3{font-size:13px;margin:10px 16px 4px;padding:5px 8px;border-left:3px solid #CBD5E1;font-weight:600;cursor:pointer;user-select:none}' +
+    'h3{font-size:13px;margin:12px 16px 4px;padding:6px 10px;border-left:3px solid #CBD5E1;background:#fff;border-radius:0 8px 8px 0;font-weight:600;cursor:pointer;user-select:none}' +
     'h3:after{content:" \\25BC";font-size:10px;float:right;opacity:.6}' +
     'h3.collapsed:after{content:" \\25B6"}' +
     '.h-r{border-color:#B91C1C;color:#B91C1C}' +
@@ -138,7 +138,7 @@ function _showAlertasSidebar(urgentes, vencidos, porVencer, pendientes, params) 
     'td.c{color:#64748B;width:28%}' +
     'td.r{color:#94A3B8;width:28%;text-align:right}' +
     '.vacio{padding:30px 16px;text-align:center;color:#94A3B8;font-size:14px}' +
-    '.ftr{font-size:11px;color:#94A3B8;text-align:center;padding:10px 16px;border-top:1px solid #F1F5F9;margin-top:8px}' +
+    '.ftr{font-size:11px;color:#94A3B8;text-align:center;padding:10px 16px;border-top:1px solid #E2E8F0;margin-top:8px}' +
     '</style>' +
     '<script>' +
     'function irAPaciente(fila){google.script.run._irAPaciente(fila)}' +

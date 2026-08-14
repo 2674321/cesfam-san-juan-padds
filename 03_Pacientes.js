@@ -892,23 +892,21 @@ function verificarIntegridadRUN() {
     if (lista.length > max) s += '<div class="row dim">… y ' + (lista.length - max) + ' más</div>'
     return s
   }
-  var html = '<style>body{font-family:Arial;font-size:13px;color:#333}' +
-    '.sec{margin:10px 0}.h{font-weight:bold;margin:4px 0}.b{background:#F1F5F9;border-radius:6px;padding:8px}' +
-    '.row{padding:2px 0;border-bottom:1px solid #ddd}.dim{color:#888}' +
-    '.bad{color:#B91C1C}.warn{color:#C2410C}</style><body>'
-  html += '<h3>🔎 Verificación de RUN</h3>' +
-    '<div class="sec"><div class="h bad">⚠️ Dígito verificador inválido: ' + invalidos.length + '</div>' +
-    '<div class="b">' + _filas(invalidos, 25) + '</div></div>' +
-    '<div class="sec"><div class="h warn">🔁 RUN duplicados: ' + dupList.length + '</div><div class="b">'
+  var html = '<style>' + _uiCss() + '</style><body>' +
+    '<div class="h">🔎 Verificación de RUN</div>' +
+    '<div class="sub">Estado de los RUN registrados en Pacientes</div>' +
+    '<div class="card"><div class="h err">⚠️ Dígito verificador inválido: ' + invalidos.length + '</div>' +
+    '<div class="dim">' + _filas(invalidos, 25) + '</div></div>' +
+    '<div class="card"><div class="h warn">🔁 RUN duplicados: ' + dupList.length + '</div>'
   for (var d2 = 0; d2 < dupList.length && d2 < 10; d2++) {
-    html += '<div class="row">' + _esc(dupList[d2][0]) + '<br><span class="dim">' +
+    html += '<div class="li">' + _esc(dupList[d2][0]) + '<br><span class="dim">' +
       _esc(dupList[d2][1].join(' · ')) + '</span></div>'
   }
-  if (dupList.length > 10) html += '<div class="row dim">… y ' + (dupList.length - 10) + ' más</div>'
-  html += '</div></div>' +
-    '<div class="sec"><div class="h warn">❓ Pacientes sin RUN: ' + sinRun.length + '</div>' +
-    '<div class="b">' + _filas(sinRun, 20) + '</div></div>' +
-    '<div class="sec dim">Las celdas con dígito incorrecto ya llevan una nota ⚠️ en la celda. ' +
+  if (dupList.length > 10) html += '<div class="li dim">… y ' + (dupList.length - 10) + ' más</div>'
+  html += '</div>' +
+    '<div class="card"><div class="h warn">❓ Pacientes sin RUN: ' + sinRun.length + '</div>' +
+    '<div class="dim">' + _filas(sinRun, 20) + '</div></div>' +
+    '<div class="sub">Las celdas con dígito incorrecto ya llevan una nota ⚠️ en la celda. ' +
     'Para reformatear o limpiar notas usa 🛠️ Datos → "✨ Corregir datos (…)".</div></body>'
   ui.showSidebar(HtmlService.createHtmlOutput(html).setTitle('Verificación de RUN').setWidth(380))
 }
@@ -1109,7 +1107,7 @@ function _buildFichaSidebarHtml(headers, data, lc, autor, row) {
   var p = []
   p.push('<html><head><base target="_top"><meta charset="UTF-8"><style>')
   p.push('*{box-sizing:border-box}')
-  p.push('body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;color:#212529;font-size:13px;background:#eef1f5}')
+  p.push('body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;margin:0;color:#1E293B;font-size:13px;background:#F1F5F9}')
   p.push('.hdr{background:#1E293B;color:#fff;padding:16px 18px 14px;border-bottom:3px solid #0F766E}')
   p.push('.hdr .nom{font-size:17px;font-weight:700;line-height:1.3}')
   p.push('.hdr .sub{font-size:11px;color:#CBD5E1;margin-top:6px;text-transform:uppercase;letter-spacing:0.8px}')
@@ -1127,8 +1125,8 @@ function _buildFichaSidebarHtml(headers, data, lc, autor, row) {
   p.push('.vacio{color:#b0b8c4;font-style:italic}')
   p.push('.s-n{color:#8a94a6} .s-v{color:#B91C1C;font-weight:600} .s-d{color:#15803D;font-weight:600}')
   p.push('.s-p{color:#C2410C;font-weight:600} .s-x{color:#7E22CE;font-weight:600}')
-  p.push('.v-d,.v-pv,.v-vd,.v-pd,.v-na{display:inline-block;padding:0 6px;border-radius:2px;font-weight:600}')
-  p.push('.v-d{background:#e3f1e8;color:#15803D}.v-pv{background:#fbeed9;color:#C2410C}.v-vd{background:#f9e3e1;color:#B91C1C}.v-pd{background:#f7f2d9;color:#B45309}.v-na{background:#eef1f5;color:#7a8494}')
+  p.push('.v-d,.v-pv,.v-vd,.v-pd,.v-na{display:inline-block;padding:1px 5px;border-radius:4px;font-weight:600;font-size:11px}')
+  p.push('.v-d{background:#DCFCE7;color:#15803D}.v-pv{background:#FFEDD5;color:#C2410C}.v-vd{background:#FEE2E2;color:#B91C1C}.v-pd{background:#FEF3C7;color:#B45309}.v-na{background:#F1F5F9;color:#64748B}')
   p.push('.leyV{font-size:9.5px;color:#6b7484;line-height:1.8;padding:0 2px}')
   p.push('.leyV i{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 3px 0 8px;vertical-align:middle}')
   p.push('.leyV i:first-child{margin-left:0}')
@@ -1137,7 +1135,7 @@ function _buildFichaSidebarHtml(headers, data, lc, autor, row) {
   p.push('.csvhdr.venc{background:#B91C1C}.csvhdr.pend{background:#C2410C}.csvcol{padding:8px 12px 6px}')
   p.push('.csvsec{font-size:9px;color:#1E293B;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;margin:6px 0 4px}')
   p.push('.csvit{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:3px 0;border-bottom:1px solid #f0f2f5}')
-  p.push('.csvit:last-child{border-bottom:none}.csvl{color:#7a8494;font-size:10px}')
+  p.push('.csvit:last-child{border-bottom:none}.csvl{color:#64748B;font-size:10px}')
   p.push('.csvbox .v-d,.csvbox .v-pv,.csvbox .v-vd,.csvbox .v-pd,.csvbox .v-na{padding:0 6px}')
   p.push('.ftr{font-size:10px;color:#8a94a6;text-align:center;padding:12px 16px;border-top:1px solid #e3e8ef;margin-top:8px;background:#fff}')
   p.push('.bar-btn{position:sticky;bottom:0;padding:10px 16px;background:#fff;border-top:2px solid #1E293B;text-align:center}')
