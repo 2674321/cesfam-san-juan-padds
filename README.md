@@ -59,6 +59,7 @@ Desarrollado por [@2674321](https://github.com/2674321) · Coquimbo, Chile
 ## Versiones
 
 - **Actual (V4):** módulos numerados en la raíz.
+- **v3 (pre-V4):** `versiones-anteriores/v3-prev4/` — última versión antes del rediseño V4.
 - **v1 (deprecated):** `versiones-anteriores/v1-deprecated/` — primera versión Apps Script.
 - **v0 (tambeni):** `versiones-anteriores/v0-tambeni/` — variante previa más antigua.
 
