@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "Si utiliza este trabajo, por favor cítelo."
+title: "CESFAM San Juan: sistema de urgencia y fichas PADI (línea V4)"
+authors:
+  - family-names: Varela
+    given-names: Patricio
+    alias: CA2OPX
+    orcid: https://orcid.org/0009-0002-1087-9445
+version: "4.0"
+date-released: "2026-08-21"
+type: software
+keywords:
+  - "google-apps-script"
+  - "salud"
+  - "urgencia"
+  - "padi"
+  - "cesfam"
+abstract: "Sistema de atención primaria de urgencia para el CESFAM San Juan: fichas de pacientes PADI, agenda, alertas, recepción y respaldo de datos, implementado sobre Google Apps Script."
+repository-code: "https://github.com/2674321/cesfam-san-juan-padds"
