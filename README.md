@@ -54,3 +54,13 @@ clasp pull           # bajar cambios desde Apps Script
 ---
 
 Desarrollado por [@2674321](https://github.com/2674321) · Coquimbo, Chile
+
+
+## Versiones
+
+- **Actual (V4):** módulos numerados en la raíz.
+- **v1 (deprecated):** `versiones-anteriores/v1-deprecated/` — primera versión Apps Script.
+- **v0 (tambeni):** `versiones-anteriores/v0-tambeni/` — variante previa más antigua.
+
+> La planilla Excel original del servicio **no se publica** por contener datos
+> clínicos personales de pacientes; se conserva solo de forma local y privada.
