@@ -5,8 +5,7 @@ Sistema de gestión de **pacientes de urgencia para el CESFAM San Juan**, constr
 a la línea **V4**: fichas PADI, agenda médica, alertas y módulo de recepción.
 
 > 📌 Este repositorio es la **versión activa** del sistema.
-> El histórico PADI original: [proyecto-cesfam-san-juan](https://github.com/2674321/proyecto-cesfam-san-juan) ·
-> Snapshot pre-V4 archivado: [cesfam-san-juan-v3-backup](https://github.com/2674321/cesfam-san-juan-v3-backup)
+> Las versiones anteriores (v0, v1, v3 pre-V4) se conservan en [`versiones-anteriores/`](versiones-anteriores/).
 
 ## Funcionalidades
 
@@ -17,6 +16,48 @@ a la línea **V4**: fichas PADI, agenda médica, alertas y módulo de recepción
 - 💾 **Backup** integrado de datos
 - 🎨 Sistema de diseño unificado (`02_DesignSystem.js`)
 
+## Capturas
+
+> Datos ficticios · capturas: agosto 2026 · línea V4
+
+### Dashboard
+
+![Dashboard principal](docs/screenshots/padi-dashboard-01.png)
+*Dashboard principal · ago 2026 · v4*
+
+![Dashboard 2](docs/screenshots/padi-dashboard-02.png)
+*Vista alternativa del dashboard · ago 2026 · v4*
+
+![Dashboard 3](docs/screenshots/padi-dashboard-03.png)
+*Tercera vista del dashboard · ago 2026 · v4*
+
+### Pacientes
+
+![Hoja de pacientes](docs/screenshots/padi-hoja-pacientes.png)
+*Hoja de pacientes · ago 2026 · v4*
+
+![Pacientes + centro de control](docs/screenshots/padi-pacientes-centro-control.png)
+*Hoja de pacientes y centro de control · ago 2026 · v4*
+
+![Ficha de usuario](docs/screenshots/padi-ficha-usuario.png)
+*Ficha de usuario · ago 2026 · v4*
+
+![Buscador](docs/screenshots/padi-buscador-pacientes.png)
+*Buscador en hoja de pacientes · ago 2026 · v4*
+
+### Módulos
+
+![Ingresos](docs/screenshots/padi-ingresos-usuarios.png)
+*Ingresos de usuarios PADI · ago 2026 · v4*
+
+![Agenda](docs/screenshots/padi-agenda.png)
+*Formato de agenda · ago 2026 · v4*
+
+![Recepción](docs/screenshots/padi-recepcion-solicitudes.png)
+*Recepción de formularios de solicitudes/atenciones · ago 2026 · v4*
+
+![Parámetros](docs/screenshots/padi-parametros.png)
+*Hoja de parámetros · ago 2026 · v4*
 ## Estructura
 
 | Archivo | Módulo |
