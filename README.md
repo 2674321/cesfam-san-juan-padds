@@ -3,7 +3,7 @@
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue)](LICENSE) ![Versión](https://img.shields.io/badge/versi%C3%B3n-v4.0-green) ![Estado](https://img.shields.io/badge/estado-en%20producci%C3%B3n-brightgreen) [![CI](https://github.com/2674321/cesfam-san-juan-padds/actions/workflows/ci.yml/badge.svg)](https://github.com/2674321/cesfam-san-juan-padds/actions/workflows/ci.yml)
 
 
-Sistema de gestión de **pacientes de urgencia para el CESFAM San Juan**, construido sobre
+Sistema de gestión de **pacientes de padds para el CESFAM San Juan**, construido sobre
 **Google Apps Script** con Google Sheets como capa de datos. Esta rama del proyecto corresponde
 a la línea **V4**: fichas PADI, agenda médica, alertas y módulo de recepción.
 
