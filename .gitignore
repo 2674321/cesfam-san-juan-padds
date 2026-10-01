@@ -1,0 +1,38 @@
+# Apps Script / credenciales
+.clasp.json
+.clasprc.json
+.env
+.env.*
+*.credentials.json
+*.token.json
+credentials.json
+token.json
+
+# Datos reales y exportaciones
+/backups/
+/exports/
+/data/real/
+/data/private/
+*.xlsx
+*.xls
+*.ods
+*.csv
+*.tsv
+
+# Dependencias / tooling
+node_modules/
+coverage/
+dist/
+build/
+
+# Temporales / sistema / editor
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
