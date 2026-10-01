@@ -1,11 +1,11 @@
-# CESFAM San Juan — (línea V4)
+# PADI — Seguimiento Clínico · CESFAM San Juan
 
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue)](LICENSE) ![Versión](https://img.shields.io/badge/versi%C3%B3n-v4.0-green) ![Estado](https://img.shields.io/badge/estado-en%20producci%C3%B3n-brightgreen) [![CI](https://github.com/2674321/cesfam-san-juan-padds/actions/workflows/ci.yml/badge.svg)](https://github.com/2674321/cesfam-san-juan-padds/actions/workflows/ci.yml)
 
 
-Sistema de gestión de **pacientes de padds para el CESFAM San Juan**, construido sobre
-**Google Apps Script** con Google Sheets como capa de datos. Esta rama del proyecto corresponde
-a la línea **V4**: fichas PADI, agenda médica, alertas y módulo de recepción.
+Sistema de seguimiento clínico para **PADI**, construido sobre **Google Apps Script + Google Sheets**.
+Centraliza fichas de pacientes, controles, agenda, alertas de vigencia y recepción en una
+misma línea operativa.
 
 > 📌 Este repositorio es la **versión activa** del sistema.
 > Las versiones anteriores (v0, v1, v3 pre-V4) se conservan en [`versiones-anteriores/`](versiones-anteriores/).
